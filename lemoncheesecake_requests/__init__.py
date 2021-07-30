@@ -47,12 +47,12 @@ class Logger:
         return "HTTP request body (JSON):\n" + _jsonify(data)
 
     @staticmethod
-    def _serialize_request_line(method: str, url: str, params: dict, session_nickname: str):
+    def _serialize_request_line(method: str, url: str, params: dict, hint: str):
         serialized = f"HTTP request: {method} {url}"
         if params:
             serialized += "?" + urlencode(params)
-        if session_nickname:
-            serialized += f" [{session_nickname}]"
+        if hint:
+            serialized += f" [{hint}]"
         return serialized
 
     @staticmethod
@@ -71,9 +71,9 @@ class Logger:
         else:
             return "HTTP response body (JSON):\n" + (_jsonify(js))
 
-    def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, session_nickname: str):
+    def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, hint: str):
         if self.request_line_logging:
-            lcc.log_info(self._serialize_request_line(request.method, request.url, request.params, session_nickname))
+            lcc.log_info(self._serialize_request_line(request.method, request.url, request.params, hint))
 
         if self.request_headers_logging:
             lcc.log_info(self._serialize_headers(prepared_request.headers, "request"))
@@ -98,15 +98,15 @@ class Logger:
 
 
 class Session(requests.Session):
-    def __init__(self, base_url="", logger=None, nickname=None):
+    def __init__(self, base_url="", logger=None, hint=None):
         super().__init__()
         self.base_url = base_url
         self.logger = logger or Logger()
-        self.nickname = nickname
+        self.hint = hint
 
     def prepare_request(self, request):
         prepared_request = super().prepare_request(request)
-        self.logger.log_request(request, prepared_request, self.nickname)
+        self.logger.log_request(request, prepared_request, self.hint)
         return prepared_request
 
     def request(self, method, url, *args, **kwargs):
