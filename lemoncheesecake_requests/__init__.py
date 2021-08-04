@@ -38,6 +38,14 @@ class Logger:
             response_code_logging=False, response_headers_logging=False, response_body_logging=False
         )
 
+    @classmethod
+    def no_headers(cls):
+        return cls(request_headers_logging=False, response_headers_logging=False)
+
+    @classmethod
+    def no_response_body(cls):
+        return cls(response_body_logging=False)
+
     @staticmethod
     def _serialize_request_line(method: str, url: str, params: dict, hint: str = None):
         serialized = f"HTTP request: {method} {url}"
