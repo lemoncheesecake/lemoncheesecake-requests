@@ -2,10 +2,13 @@ import json
 from urllib.parse import urlencode
 
 import lemoncheesecake.api as lcc
+from lemoncheesecake.matching import *
 import requests
 
 
-__all__ = ("Session", "Logger")
+__all__ = (
+    "Session", "Response", "Logger", "is_2xx", "is_3xx", "is_4xx", "is_5xx"
+)
 
 
 def _jsonify(data):
@@ -24,13 +27,37 @@ class Logger:
         self.response_headers_logging = response_headers_logging
         self.response_body_logging = response_body_logging
 
+    @classmethod
+    def on(cls):
+        return cls()
+
+    @classmethod
+    def off(cls):
+        return cls(
+            request_line_logging=False, request_headers_logging=False, request_body_logging=False,
+            response_code_logging=False, response_headers_logging=False, response_body_logging=False
+        )
+
+    @staticmethod
+    def _serialize_request_line(method: str, url: str, params: dict, hint: str = None):
+        serialized = f"HTTP request: {method} {url}"
+        if params:
+            serialized += "?" + urlencode(params)
+        if hint:
+            serialized += f" [{hint}]"
+        return serialized
+
     @staticmethod
     def _serialize_dict(headers):
         return "\n".join(f"- {name}: {value}" for name, value in headers.items())
 
     @staticmethod
-    def _serialize_headers(headers, type):
-        return "HTTP %s headers:\n%s" % (type, Logger._serialize_dict(headers))
+    def _serialize_request_headers(headers):
+        return "HTTP request headers:\n%s" % Logger._serialize_dict(headers)
+
+    @classmethod
+    def _serialize_request_json(cls, data):
+        return "HTTP request body (JSON)\n" + _jsonify(data)
 
     @staticmethod
     def _serialize_request_data(data):
@@ -43,21 +70,12 @@ class Logger:
         )
 
     @staticmethod
-    def _serialize_request_json(data):
-        return "HTTP request body (JSON):\n" + _jsonify(data)
-
-    @staticmethod
-    def _serialize_request_line(method: str, url: str, params: dict, hint: str):
-        serialized = f"HTTP request: {method} {url}"
-        if params:
-            serialized += "?" + urlencode(params)
-        if hint:
-            serialized += f" [{hint}]"
-        return serialized
-
-    @staticmethod
     def _serialize_response_line(resp):
         return "HTTP response code: %s (in %.03fs)" % (resp.status_code, resp.elapsed.total_seconds())
+
+    @classmethod
+    def _serialize_response_headers(cls, headers):
+        return "HTTP response headers:\n%s" % Logger._serialize_dict(headers)
 
     @staticmethod
     def _serialize_response_body(resp):
@@ -71,16 +89,39 @@ class Logger:
         else:
             return "HTTP response body (JSON):\n" + (_jsonify(js))
 
+    @classmethod
+    def _serialize_request_error(cls,
+                                 request: requests.Request, prepared_request: requests.PreparedRequest,
+                                 resp: requests.Response):
+        chunks = [
+            "HTTP request failure:",
+            cls._serialize_request_line(request.method, request.url, request.params),
+            cls._serialize_request_headers(prepared_request.headers)
+        ]
+
+        if request.json is not None:
+            chunks.append(cls._serialize_request_line(request.json))
+        if request.data:
+            chunks.append(cls._serialize_request_data(request.data))
+        if request.files:
+            chunks.append(cls._serialize_request_files(request.files))
+
+        chunks.append(cls._serialize_response_line(resp))
+        chunks.append(cls._serialize_response_headers(resp.headers))
+        chunks.append(cls._serialize_response_body(resp))
+
+        return "\n".join(chunks)
+
     def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, hint: str):
         if self.request_line_logging:
             lcc.log_info(self._serialize_request_line(request.method, request.url, request.params, hint))
 
         if self.request_headers_logging:
-            lcc.log_info(self._serialize_headers(prepared_request.headers, "request"))
+            lcc.log_info(self._serialize_request_headers(prepared_request.headers))
 
         if self.request_body_logging:
             if request.json is not None:
-                lcc.log_info(_jsonify(request.json))
+                lcc.log_info(self._serialize_request_line(request.json))
             if request.data:
                 lcc.log_info(self._serialize_request_data(request.data))
             if request.files:
@@ -91,10 +132,47 @@ class Logger:
             lcc.log_info(self._serialize_response_line(resp))
 
         if self.response_headers_logging:
-            lcc.log_info(self._serialize_headers(resp.headers, "response"))
+            lcc.log_info(self._serialize_response_headers(resp.headers))
 
         if self.response_body_logging:
             lcc.log_info(self._serialize_response_body(resp))
+
+
+class Response(requests.Response):
+    def __init__(self):
+        super().__init__()
+        self._request = requests.Request()
+        self._prepared_request = requests.PreparedRequest()
+
+    @classmethod
+    def wrap(cls, resp, request, prepared_request):
+        resp.__class__ = cls
+        resp._request = request
+        resp._prepared_request = prepared_request
+        return resp
+
+    def check_status_code(self, expected):
+        check_that("HTTP status code", self.status_code, is_(expected))
+        return self
+
+    def require_status_code(self, expected):
+        require_that("HTTP status code", self.status_code, is_(expected))
+        return self
+
+    def assert_status_code(self, expected):
+        assert_that("HTTP status code", self.status_code, is_(expected))
+        return self
+
+    def raise_unless_status_code(self, expected):
+        matcher = is_(expected)
+        if not matcher.matches(self.status_code):
+            raise Exception(
+                Logger._serialize_request_error(self._request, self._prepared_request, self)
+            )
+        return self
+
+    def raise_unless_ok(self):
+        return self.raise_unless_status_code(is_2xx())
 
 
 class Session(requests.Session):
@@ -103,13 +181,46 @@ class Session(requests.Session):
         self.base_url = base_url
         self.logger = logger or Logger()
         self.hint = hint
+        self._last_request = requests.Request()
+        self._last_prepared_request = requests.Request()
 
     def prepare_request(self, request):
         prepared_request = super().prepare_request(request)
         self.logger.log_request(request, prepared_request, self.hint)
+        self._last_request = request
+        self._last_prepared_request = prepared_request
         return prepared_request
 
-    def request(self, method, url, *args, **kwargs):
-        resp = super().request(method, self.base_url + url, *args, **kwargs)
-        self.logger.log_response(resp)
-        return resp
+    def request(self, method, url, *args, **kwargs) -> Response:
+        logger = kwargs.pop("logger", self.logger)
+
+        # set actual logger for prepare_request since it cannot be passed another way
+        orig_logger = self.logger
+        self.logger = logger
+        try:
+            resp = super().request(method, self.base_url + url, *args, **kwargs)
+        finally:
+            self.logger = orig_logger
+
+        logger.log_response(resp)
+
+        return Response.wrap(resp, self._last_request, self._last_prepared_request)
+
+    def get(self, url, **kwargs) -> Response:
+        return super().get(url, **kwargs)
+
+
+def is_2xx():
+    return is_between(200, 299)
+
+
+def is_3xx():
+    return is_between(300, 399)
+
+
+def is_4xx():
+    return is_between(400, 499)
+
+
+def is_5xx():
+    return is_between(500, 599)
