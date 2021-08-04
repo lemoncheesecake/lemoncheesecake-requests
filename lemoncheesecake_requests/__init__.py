@@ -209,6 +209,24 @@ class Session(requests.Session):
     def get(self, url, **kwargs) -> Response:
         return super().get(url, **kwargs)
 
+    def options(self, url, **kwargs) -> Response:
+        return super().options(url, **kwargs)
+
+    def head(self, url, **kwargs):
+        return super().head(url, **kwargs)
+
+    def post(self, url, data=None, json=None, **kwargs):
+        return super().post(url, data=data, json=json, **kwargs)
+
+    def put(self, url, data=None, **kwargs):
+        return super().put(url, data=data, **kwargs)
+
+    def patch(self, url, data=None, **kwargs):
+        return super().patch(url, data=data, **kwargs)
+
+    def delete(self, url, **kwargs):
+        return super().delete(url, **kwargs)
+
 
 def is_2xx():
     return is_between(200, 299)
