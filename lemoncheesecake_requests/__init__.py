@@ -48,11 +48,12 @@ class Logger:
 
     @staticmethod
     def _serialize_request_line(method: str, url: str, params: dict, hint: str = None):
-        serialized = f"HTTP request: {method} {url}"
+        serialized = "HTTP request"
+        if hint:
+            serialized += f" ({hint})"
+        serialized += f":\n  > {method} {url}"
         if params:
             serialized += "?" + urlencode(params)
-        if hint:
-            serialized += f" [{hint}]"
         return serialized
 
     @staticmethod
@@ -78,8 +79,14 @@ class Logger:
         )
 
     @staticmethod
-    def _serialize_response_line(resp):
-        return "HTTP response code: %s (in %.03fs)" % (resp.status_code, resp.elapsed.total_seconds())
+    def _serialize_response_line(resp, hint: str):
+        content = "HTTP response"
+        if hint:
+            content += f" ({hint})"
+        content += ":\n"
+        content += "  > Status: %d\n" % resp.status_code
+        content += "  > Duration: %.03fs" % resp.elapsed.total_seconds()
+        return content
 
     @classmethod
     def _serialize_response_headers(cls, headers):
@@ -135,9 +142,9 @@ class Logger:
             if request.files:
                 lcc.log_info(self._serialize_request_files(request.files))
 
-    def log_response(self, resp: requests.Response):
+    def log_response(self, resp: requests.Response, hint: str):
         if self.response_code_logging:
-            lcc.log_info(self._serialize_response_line(resp))
+            lcc.log_info(self._serialize_response_line(resp, hint))
 
         if self.response_headers_logging:
             lcc.log_info(self._serialize_response_headers(resp.headers))
@@ -210,7 +217,7 @@ class Session(requests.Session):
         finally:
             self.logger = orig_logger
 
-        logger.log_response(resp)
+        logger.log_response(resp, self.hint)
 
         return Response.wrap(resp, self._last_request, self._last_prepared_request)
 
