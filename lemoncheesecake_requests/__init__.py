@@ -75,7 +75,7 @@ class Logger:
     @staticmethod
     def _serialize_request_files(files):
         return "HTTP request body (multipart files)\n%s" % (
-            "\n".join("%s (%s)" % (f[0], f[2]) for f in files.values())
+            "\n".join("- %s (%s)" % (f[0], f[2]) for f in files.values())
         )
 
     @staticmethod
@@ -170,13 +170,22 @@ class Response(requests.Response):
         check_that("HTTP status code", self.status_code, is_(expected))
         return self
 
+    def check_ok(self):
+        return self.check_status_code(is_2xx())
+
     def require_status_code(self, expected):
         require_that("HTTP status code", self.status_code, is_(expected))
         return self
 
+    def require_ok(self):
+        return self.require_status_code(is_2xx())
+
     def assert_status_code(self, expected):
         assert_that("HTTP status code", self.status_code, is_(expected))
         return self
+
+    def assert_ok(self):
+        return self.assert_status_code(is_2xx())
 
     def raise_unless_status_code(self, expected):
         matcher = is_(expected)
