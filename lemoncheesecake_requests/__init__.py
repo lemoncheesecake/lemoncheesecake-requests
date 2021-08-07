@@ -79,7 +79,7 @@ class Logger:
         )
 
     @staticmethod
-    def _serialize_response_line(resp, hint: str):
+    def _serialize_response_line(resp, hint: str = None):
         content = "HTTP response"
         if hint:
             content += f" ({hint})"
