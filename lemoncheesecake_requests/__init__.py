@@ -153,7 +153,7 @@ class Response(requests.Response):
         self._prepared_request = requests.PreparedRequest()
 
     @classmethod
-    def wrap(cls, resp, request, prepared_request):
+    def cast(cls, resp, request, prepared_request):
         resp.__class__ = cls
         resp._request = request
         resp._prepared_request = prepared_request
@@ -233,7 +233,7 @@ class Session(requests.Session):
 
         logger.log_response(resp, self.hint)
 
-        return Response.wrap(resp, self._last_request, self._last_prepared_request)
+        return Response.cast(resp, self._last_request, self._last_prepared_request)
 
     def get(self, url, **kwargs) -> Response:
         return super().get(url, **kwargs)
