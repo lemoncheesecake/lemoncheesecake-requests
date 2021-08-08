@@ -3,16 +3,18 @@ from urllib.parse import urlencode
 
 import lemoncheesecake.api as lcc
 from lemoncheesecake.matching import *
+from lemoncheesecake.matching.matcher import MatcherDescriptionTransformer
 import requests
 
 
 __all__ = (
-    "Session", "Response", "Logger", "is_2xx", "is_3xx", "is_4xx", "is_5xx"
+    "Session", "Response", "Logger", "LemoncheesecakeRequestsException",
+    "is_2xx", "is_3xx", "is_4xx", "is_5xx"
 )
 
 
-def _jsonify(data):
-    return json.dumps(data, indent=4, ensure_ascii=False)
+class LemoncheesecakeRequestsException(Exception):
+    pass
 
 
 class Logger:
@@ -47,7 +49,7 @@ class Logger:
         return cls(response_body_logging=False)
 
     @staticmethod
-    def _serialize_request_line(method: str, url: str, params: dict, hint: str = None):
+    def serialize_request_line(method: str, url: str, params: dict, hint: str = None) -> str:
         serialized = "HTTP request"
         if hint:
             serialized += f" ({hint})"
@@ -57,29 +59,46 @@ class Logger:
         return serialized
 
     @staticmethod
-    def _serialize_dict(headers):
+    def _jsonify(data):
+        return json.dumps(data, indent=4, ensure_ascii=False)
+
+    @staticmethod
+    def _serialize_dict(headers) -> str:
         return "\n".join(f"- {name}: {value}" for name, value in headers.items())
 
     @staticmethod
-    def _serialize_request_headers(headers):
+    def serialize_request_headers(headers) -> str:
         return "HTTP request headers:\n%s" % Logger._serialize_dict(headers)
 
     @classmethod
-    def _serialize_request_json(cls, data):
-        return "HTTP request body (JSON)\n" + _jsonify(data)
+    def _serialize_request_json(cls, data) -> str:
+        return "HTTP request body (JSON)\n" + cls._jsonify(data)
 
     @staticmethod
-    def _serialize_request_data(data):
+    def _serialize_request_data(data) -> str:
         return "HTTP request body (multipart form parameters)\n" + Logger._serialize_dict(data)
 
     @staticmethod
-    def _serialize_request_files(files):
+    def _serialize_request_files(files) -> str:
         return "HTTP request body (multipart files)\n%s" % (
             "\n".join("- %s (%s)" % (f[0], f[2]) for f in files.values())
         )
 
+    @classmethod
+    def serialize_request_body(cls, request: requests.Request) -> str:
+        chunks = []
+
+        if request.json is not None:
+            chunks.append(cls._serialize_request_json(request.json))
+        if request.data:
+            chunks.append(cls._serialize_request_data(request.data))
+        if request.files:
+            chunks.append(cls._serialize_request_files(request.files))
+
+        return "\n".join(chunks)
+
     @staticmethod
-    def _serialize_response_line(resp, hint: str = None):
+    def serialize_response_line(resp, hint: str = None) -> str:
         content = "HTTP response"
         if hint:
             content += f" ({hint})"
@@ -89,11 +108,11 @@ class Logger:
         return content
 
     @classmethod
-    def _serialize_response_headers(cls, headers):
+    def serialize_response_headers(cls, headers) -> str:
         return "HTTP response headers:\n%s" % Logger._serialize_dict(headers)
 
-    @staticmethod
-    def _serialize_response_body(resp):
+    @classmethod
+    def serialize_response_body(cls, resp) -> str:
         try:
             js = resp.json()
         except ValueError:
@@ -102,55 +121,29 @@ class Logger:
             else:
                 return "HTTP response body: n/a"
         else:
-            return "HTTP response body (JSON):\n" + (_jsonify(js))
-
-    @classmethod
-    def _serialize_request_error(cls,
-                                 request: requests.Request, prepared_request: requests.PreparedRequest,
-                                 resp: requests.Response):
-        chunks = [
-            "HTTP request failure:",
-            cls._serialize_request_line(request.method, request.url, request.params),
-            cls._serialize_request_headers(prepared_request.headers)
-        ]
-
-        if request.json is not None:
-            chunks.append(cls._serialize_request_line(request.json))
-        if request.data:
-            chunks.append(cls._serialize_request_data(request.data))
-        if request.files:
-            chunks.append(cls._serialize_request_files(request.files))
-
-        chunks.append(cls._serialize_response_line(resp))
-        chunks.append(cls._serialize_response_headers(resp.headers))
-        chunks.append(cls._serialize_response_body(resp))
-
-        return "\n".join(chunks)
+            return "HTTP response body (JSON):\n" + (cls._jsonify(js))
 
     def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, hint: str):
         if self.request_line_logging:
-            lcc.log_info(self._serialize_request_line(request.method, request.url, request.params, hint))
+            lcc.log_info(self.serialize_request_line(request.method, request.url, request.params, hint))
 
         if self.request_headers_logging:
-            lcc.log_info(self._serialize_request_headers(prepared_request.headers))
+            lcc.log_info(self.serialize_request_headers(prepared_request.headers))
 
         if self.request_body_logging:
-            if request.json is not None:
-                lcc.log_info(self._serialize_request_line(request.json))
-            if request.data:
-                lcc.log_info(self._serialize_request_data(request.data))
-            if request.files:
-                lcc.log_info(self._serialize_request_files(request.files))
+            serialized_body = self.serialize_request_body(request)
+            if serialized_body:
+                lcc.log_info(serialized_body)
 
     def log_response(self, resp: requests.Response, hint: str):
         if self.response_code_logging:
-            lcc.log_info(self._serialize_response_line(resp, hint))
+            lcc.log_info(self.serialize_response_line(resp, hint))
 
         if self.response_headers_logging:
-            lcc.log_info(self._serialize_response_headers(resp.headers))
+            lcc.log_info(self.serialize_response_headers(resp.headers))
 
         if self.response_body_logging:
-            lcc.log_info(self._serialize_response_body(resp))
+            lcc.log_info(self.serialize_response_body(resp))
 
 
 class Response(requests.Response):
@@ -189,9 +182,21 @@ class Response(requests.Response):
 
     def raise_unless_status_code(self, expected):
         matcher = is_(expected)
-        if not matcher.matches(self.status_code):
-            raise Exception(
-                Logger._serialize_request_error(self._request, self._prepared_request, self)
+        outcome = matcher.matches(self.status_code)
+        if not outcome:
+            raise LemoncheesecakeRequestsException(
+                f"expected status code {matcher.build_description(MatcherDescriptionTransformer())}," +
+                f" {outcome.description}\n\n" +
+                "\n\n".join(
+                    filter(bool, (
+                        Logger.serialize_request_line(self._request.method, self._request.url, self._request.params),
+                        Logger.serialize_request_headers(self._prepared_request.headers),
+                        Logger.serialize_request_body(self._request),
+                        Logger.serialize_response_line(self),
+                        Logger.serialize_response_headers(self.headers),
+                        Logger.serialize_response_body(self)
+                    )
+                ))
             )
         return self
 
