@@ -20,14 +20,15 @@ class LemoncheesecakeRequestsException(Exception):
 class Logger:
     def __init__(self,
                  request_line_logging=True, request_headers_logging=True, request_body_logging=True,
-                 response_code_logging=True, response_headers_logging=True, response_body_logging=True
-                 ):
+                 response_code_logging=True, response_headers_logging=True, response_body_logging=True,
+                 max_body_size=2048):
         self.request_line_logging = request_line_logging
         self.request_headers_logging = request_headers_logging
         self.request_body_logging = request_body_logging
         self.response_code_logging = response_code_logging
         self.response_headers_logging = response_headers_logging
         self.response_body_logging = response_body_logging
+        self.max_body_size = max_body_size
 
     @classmethod
     def on(cls):
@@ -123,6 +124,12 @@ class Logger:
         else:
             return "HTTP response body (JSON):\n" + (cls._format_json(js))
 
+    def _log_body(self, formatted_body, description):
+        if self.max_body_size is not None and len(formatted_body) > self.max_body_size:
+            lcc.save_attachment_content(formatted_body, "body", description)
+        else:
+            lcc.log_info(formatted_body)
+
     def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, hint: str):
         if self.request_line_logging:
             lcc.log_info(self.format_request_line(request.method, request.url, request.params, hint))
@@ -133,7 +140,7 @@ class Logger:
         if self.request_body_logging:
             formatted_body = self.format_request_body(request)
             if formatted_body:
-                lcc.log_info(formatted_body)
+                self._log_body(formatted_body, "HTTP request body")
 
     def log_response(self, resp: requests.Response, hint: str):
         if self.response_code_logging:
@@ -143,7 +150,7 @@ class Logger:
             lcc.log_info(self.format_response_headers(resp.headers))
 
         if self.response_body_logging:
-            lcc.log_info(self.format_response_body(resp))
+            self._log_body(self.format_response_body(resp), "HTTP response body")
 
 
 class Response(requests.Response):
