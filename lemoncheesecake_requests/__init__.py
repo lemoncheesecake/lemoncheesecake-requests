@@ -49,56 +49,56 @@ class Logger:
         return cls(response_body_logging=False)
 
     @staticmethod
-    def serialize_request_line(method: str, url: str, params: dict, hint: str = None) -> str:
-        serialized = "HTTP request"
+    def format_request_line(method: str, url: str, params: dict, hint: str = None) -> str:
+        formatted = "HTTP request"
         if hint:
-            serialized += f" ({hint})"
-        serialized += f":\n  > {method} {url}"
+            formatted += f" ({hint})"
+        formatted += f":\n  > {method} {url}"
         if params:
-            serialized += "?" + urlencode(params)
-        return serialized
+            formatted += "?" + urlencode(params)
+        return formatted
 
     @staticmethod
-    def _jsonify(data):
+    def _format_json(data):
         return json.dumps(data, indent=4, ensure_ascii=False)
 
     @staticmethod
-    def _serialize_dict(headers) -> str:
+    def _format_dict(headers) -> str:
         return "\n".join(f"- {name}: {value}" for name, value in headers.items())
 
     @staticmethod
-    def serialize_request_headers(headers) -> str:
-        return "HTTP request headers:\n%s" % Logger._serialize_dict(headers)
+    def format_request_headers(headers) -> str:
+        return "HTTP request headers:\n%s" % Logger._format_dict(headers)
 
     @classmethod
-    def _serialize_request_json(cls, data) -> str:
-        return "HTTP request body (JSON)\n" + cls._jsonify(data)
+    def _format_request_json(cls, data) -> str:
+        return "HTTP request body (JSON)\n" + cls._format_json(data)
 
     @staticmethod
-    def _serialize_request_data(data) -> str:
-        return "HTTP request body (multipart form parameters)\n" + Logger._serialize_dict(data)
+    def _format_request_data(data) -> str:
+        return "HTTP request body (multipart form parameters)\n" + Logger._format_dict(data)
 
     @staticmethod
-    def _serialize_request_files(files) -> str:
+    def _format_request_files(files) -> str:
         return "HTTP request body (multipart files)\n%s" % (
             "\n".join("- %s (%s)" % (f[0], f[2]) for f in files.values())
         )
 
     @classmethod
-    def serialize_request_body(cls, request: requests.Request) -> str:
+    def format_request_body(cls, request: requests.Request) -> str:
         chunks = []
 
         if request.json is not None:
-            chunks.append(cls._serialize_request_json(request.json))
+            chunks.append(cls._format_request_json(request.json))
         if request.data:
-            chunks.append(cls._serialize_request_data(request.data))
+            chunks.append(cls._format_request_data(request.data))
         if request.files:
-            chunks.append(cls._serialize_request_files(request.files))
+            chunks.append(cls._format_request_files(request.files))
 
         return "\n".join(chunks)
 
     @staticmethod
-    def serialize_response_line(resp, hint: str = None) -> str:
+    def format_response_line(resp, hint: str = None) -> str:
         content = "HTTP response"
         if hint:
             content += f" ({hint})"
@@ -108,11 +108,11 @@ class Logger:
         return content
 
     @classmethod
-    def serialize_response_headers(cls, headers) -> str:
-        return "HTTP response headers:\n%s" % Logger._serialize_dict(headers)
+    def format_response_headers(cls, headers) -> str:
+        return "HTTP response headers:\n%s" % Logger._format_dict(headers)
 
     @classmethod
-    def serialize_response_body(cls, resp) -> str:
+    def format_response_body(cls, resp) -> str:
         try:
             js = resp.json()
         except ValueError:
@@ -121,29 +121,29 @@ class Logger:
             else:
                 return "HTTP response body: n/a"
         else:
-            return "HTTP response body (JSON):\n" + (cls._jsonify(js))
+            return "HTTP response body (JSON):\n" + (cls._format_json(js))
 
     def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, hint: str):
         if self.request_line_logging:
-            lcc.log_info(self.serialize_request_line(request.method, request.url, request.params, hint))
+            lcc.log_info(self.format_request_line(request.method, request.url, request.params, hint))
 
         if self.request_headers_logging:
-            lcc.log_info(self.serialize_request_headers(prepared_request.headers))
+            lcc.log_info(self.format_request_headers(prepared_request.headers))
 
         if self.request_body_logging:
-            serialized_body = self.serialize_request_body(request)
-            if serialized_body:
-                lcc.log_info(serialized_body)
+            formatted_body = self.format_request_body(request)
+            if formatted_body:
+                lcc.log_info(formatted_body)
 
     def log_response(self, resp: requests.Response, hint: str):
         if self.response_code_logging:
-            lcc.log_info(self.serialize_response_line(resp, hint))
+            lcc.log_info(self.format_response_line(resp, hint))
 
         if self.response_headers_logging:
-            lcc.log_info(self.serialize_response_headers(resp.headers))
+            lcc.log_info(self.format_response_headers(resp.headers))
 
         if self.response_body_logging:
-            lcc.log_info(self.serialize_response_body(resp))
+            lcc.log_info(self.format_response_body(resp))
 
 
 class Response(requests.Response):
@@ -188,13 +188,14 @@ class Response(requests.Response):
                 f"expected status code {matcher.build_description(MatcherDescriptionTransformer())}," +
                 f" {outcome.description}\n\n" +
                 "\n\n".join(
+                    # some serializing methods can return empty data, that's why we filter them out
                     filter(bool, (
-                        Logger.serialize_request_line(self._request.method, self._request.url, self._request.params),
-                        Logger.serialize_request_headers(self._prepared_request.headers),
-                        Logger.serialize_request_body(self._request),
-                        Logger.serialize_response_line(self),
-                        Logger.serialize_response_headers(self.headers),
-                        Logger.serialize_response_body(self)
+                        Logger.format_request_line(self._request.method, self._request.url, self._request.params),
+                        Logger.format_request_headers(self._prepared_request.headers),
+                        Logger.format_request_body(self._request),
+                        Logger.format_response_line(self),
+                        Logger.format_response_headers(self.headers),
+                        Logger.format_response_body(self)
                     )
                 ))
             )
