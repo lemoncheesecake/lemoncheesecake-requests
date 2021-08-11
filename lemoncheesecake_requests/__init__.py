@@ -1,3 +1,4 @@
+import collections
 import json
 from urllib.parse import urlencode
 
@@ -81,8 +82,12 @@ class Logger:
 
     @staticmethod
     def _format_request_files(files) -> str:
+        if isinstance(files, collections.Mapping):
+            fileinfos = files.values()
+        else:
+            fileinfos = [f[1] for f in files]
         return "HTTP request body (multipart files)\n%s" % (
-            "\n".join("- %s (%s)" % (f[0], f[2]) for f in files.values())
+            "\n".join("- %s (%s)" % (info[0], info[2]) for info in fileinfos)
         )
 
     @classmethod
