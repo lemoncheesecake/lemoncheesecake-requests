@@ -201,3 +201,16 @@ def test_session_log_only_request_body_files_as_2_tuple(lcc_mock):
         lcc_mock,
         r"HTTP request body.+plain\.txt"
     )
+
+
+def test_session_log_hints(lcc_mock):
+    session = mock_session(Session(hint="this is hint"))
+    logger = Logger.off()
+    logger.request_line_logging = True
+    logger.response_code_logging = True
+    session.get("http://www.example.net", logger=logger)
+    assert_logs(
+        lcc_mock,
+        r"HTTP request \(this is hint\)",
+        r"HTTP response \(this is hint\)"
+    )
