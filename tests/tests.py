@@ -68,7 +68,7 @@ def test_session_default(lcc_mock):
 
 
 def test_session_log_only_request_line(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_line_logging = True
     session.get("http://www.example.net", logger=logger)
@@ -79,7 +79,7 @@ def test_session_log_only_request_line(lcc_mock):
 
 
 def test_session_log_only_request_line_with_params(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_line_logging = True
     session.get("http://www.example.net", params={"foo": "bar"}, logger=logger)
@@ -90,18 +90,18 @@ def test_session_log_only_request_line_with_params(lcc_mock):
 
 
 def test_session_log_only_request_header(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_headers_logging = True
-    session.get("http://www.example.net", logger=logger)
+    session.get("http://www.example.net", headers={"foo": "bar"}, logger=logger)
     assert_logs(
         lcc_mock,
-        "HTTP request headers"
+        "HTTP request headers.+foo.+bar"
     )
 
 
 def test_session_log_only_request_body_json(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", json={"foo": "bar"}, logger=logger)
@@ -112,7 +112,7 @@ def test_session_log_only_request_body_json(lcc_mock):
 
 
 def test_session_log_only_request_body_data_as_dict(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", data={"foo": "bar"}, logger=logger)
@@ -123,7 +123,7 @@ def test_session_log_only_request_body_data_as_dict(lcc_mock):
 
 
 def test_session_log_only_request_body_data_as_text(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", data="foobar", logger=logger)
@@ -134,7 +134,7 @@ def test_session_log_only_request_body_data_as_text(lcc_mock):
 
 
 def test_session_log_only_request_body_data_as_binary(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", data=b"foobar", logger=logger)
@@ -145,7 +145,7 @@ def test_session_log_only_request_body_data_as_binary(lcc_mock):
 
 
 def test_session_log_only_request_body_data_as_stream(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", data=io.StringIO("foobar"), logger=logger)
@@ -160,7 +160,7 @@ def test_session_log_only_request_body_data_as_generator(lcc_mock):
         yield "foo"
         yield "bar"
 
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", data=mygen(), logger=logger)
@@ -171,7 +171,7 @@ def test_session_log_only_request_body_data_as_generator(lcc_mock):
 
 
 def test_session_log_only_request_body_files_as_list(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", files=[("file", ("plain.txt", "sometextdata", "text/plain"))], logger=logger)
@@ -182,7 +182,7 @@ def test_session_log_only_request_body_files_as_list(lcc_mock):
 
 
 def test_session_log_only_request_body_files_as_dict(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", files={"file": ("plain.txt", "sometextdata", "text/plain")}, logger=logger)
@@ -193,7 +193,7 @@ def test_session_log_only_request_body_files_as_dict(lcc_mock):
 
 
 def test_session_log_only_request_body_files_as_2_tuple(lcc_mock):
-    session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    session = mock_session(Session())
     logger = Logger.off()
     logger.request_body_logging = True
     session.get("http://www.example.net", files=[("file", ("plain.txt", "sometextdata"))], logger=logger)
