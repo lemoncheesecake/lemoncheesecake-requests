@@ -1,6 +1,6 @@
 import base64
 import inspect
-import collections
+import collections.abc
 import io
 import json
 from urllib.parse import urlencode
@@ -85,7 +85,7 @@ class Logger:
 
     @classmethod
     def _format_request_data(cls, data) -> str:
-        if isinstance(data, collections.Mapping):
+        if isinstance(data, collections.abc.Mapping):
             return "HTTP request body (multi-part form parameters):\n" + Logger._format_dict(data)
         elif inspect.isgenerator(data):
             return "HTTP request body:\n  > <generator>"
@@ -98,7 +98,7 @@ class Logger:
 
     @staticmethod
     def _format_request_files(files) -> str:
-        if isinstance(files, collections.Mapping):
+        if isinstance(files, collections.abc.Mapping):
             infos = files.values()
         else:
             infos = [f[1] for f in files]
@@ -185,7 +185,7 @@ class Response(requests.Response):
         self._prepared_request = requests.PreparedRequest()
 
     @classmethod
-    def cast(cls, resp, request, prepared_request):
+    def cast(cls, resp: requests.Response, request, prepared_request):
         resp.__class__ = cls
         resp._request = request
         resp._prepared_request = prepared_request
