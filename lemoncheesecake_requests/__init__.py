@@ -1,12 +1,15 @@
+import base64
+import inspect
 import collections
+import io
 import json
 from urllib.parse import urlencode
+
+import requests
 
 import lemoncheesecake.api as lcc
 from lemoncheesecake.matching import *
 from lemoncheesecake.matching.matcher import MatcherDescriptionTransformer
-import requests
-
 
 __all__ = (
     "Session", "Response", "Logger", "LemoncheesecakeRequestsException",
@@ -65,8 +68,12 @@ class Logger:
         return json.dumps(data, indent=4, ensure_ascii=False)
 
     @staticmethod
-    def _format_dict(headers) -> str:
-        return "\n".join(f"- {name}: {value}" for name, value in headers.items())
+    def _format_dict(data) -> str:
+        return "\n".join(f"- {name}: {value}" for name, value in data.items())
+
+    @staticmethod
+    def _format_binary(data: bytes) -> str:
+        return base64.encodebytes(data).decode()
 
     @staticmethod
     def format_request_headers(headers) -> str:
@@ -74,20 +81,33 @@ class Logger:
 
     @classmethod
     def _format_request_json(cls, data) -> str:
-        return "HTTP request body (JSON)\n" + cls._format_json(data)
+        return "HTTP request body (JSON):\n" + cls._format_json(data)
 
-    @staticmethod
-    def _format_request_data(data) -> str:
-        return "HTTP request body (multipart form parameters)\n" + Logger._format_dict(data)
+    @classmethod
+    def _format_request_data(cls, data) -> str:
+        if isinstance(data, collections.Mapping):
+            return "HTTP request body (multi-part form parameters):\n" + Logger._format_dict(data)
+        elif inspect.isgenerator(data):
+            return "HTTP request body:\n  > <generator>"
+        elif isinstance(data, io.IOBase):
+            return "HTTP request body:\n  > <IO stream>"
+        elif isinstance(data, bytes):
+            return "HTTP request body (binary, base64-ified):\n" + cls._format_binary(data)
+        else:
+            return "HTTP request body:\n" + data
 
     @staticmethod
     def _format_request_files(files) -> str:
         if isinstance(files, collections.Mapping):
-            fileinfos = files.values()
+            infos = files.values()
         else:
-            fileinfos = [f[1] for f in files]
-        return "HTTP request body (multipart files)\n%s" % (
-            "\n".join("- %s (%s)" % (info[0], info[2]) for info in fileinfos)
+            infos = [f[1] for f in files]
+
+        return "HTTP request body (multipart files):\n%s" % (
+            "\n".join(
+                "- %s (%s)" % (info[0], info[2]) if len(info) >= 3 else "- %s" % info[0]
+                for info in infos
+            )
         )
 
     @classmethod
@@ -254,19 +274,19 @@ class Session(requests.Session):
     def options(self, url, **kwargs) -> Response:
         return super().options(url, **kwargs)
 
-    def head(self, url, **kwargs):
+    def head(self, url, **kwargs) -> Response:
         return super().head(url, **kwargs)
 
-    def post(self, url, data=None, json=None, **kwargs):
+    def post(self, url, data=None, json=None, **kwargs) -> Response:
         return super().post(url, data=data, json=json, **kwargs)
 
-    def put(self, url, data=None, **kwargs):
+    def put(self, url, data=None, **kwargs) -> Response:
         return super().put(url, data=data, **kwargs)
 
-    def patch(self, url, data=None, **kwargs):
+    def patch(self, url, data=None, **kwargs) -> Response:
         return super().patch(url, data=data, **kwargs)
 
-    def delete(self, url, **kwargs):
+    def delete(self, url, **kwargs) -> Response:
         return super().delete(url, **kwargs)
 
 
