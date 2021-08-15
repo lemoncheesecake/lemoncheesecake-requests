@@ -138,14 +138,16 @@ class Logger:
         return "HTTP response headers:\n%s" % Logger._format_dict(headers)
 
     @classmethod
-    def format_response_body(cls, resp) -> str:
+    def format_response_body(cls, resp: "Response") -> str:
+        if not resp.content:
+            return "HTTP response body:\n  > n/a"
         try:
             js = resp.json()
         except ValueError:
-            if resp.text:
+            if resp.apparent_encoding is not None:  # None means that it does not look like text
                 return "HTTP response body:\n" + resp.text
             else:
-                return "HTTP response body: n/a"
+                return "HTTP response body (binary, base64-ified):\n" + cls._format_binary(resp.content)
         else:
             return "HTTP response body (JSON):\n" + (cls._format_json(js))
 
