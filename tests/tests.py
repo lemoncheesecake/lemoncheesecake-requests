@@ -349,3 +349,36 @@ def test_session_logger_switching(lcc_mock):
         lcc_mock,
         callee.Any(), callee.Any(), callee.Any(), callee.Any(), callee.Any()
     )
+
+
+def test_bodies_saved_as_attachments(lcc_mock):
+    request_body = "A" * 20
+    response_body = "B" * 20
+    session = mock_session(text=response_body)
+    session.logger = Logger.on()
+    session.logger.max_body_size = 10
+    session.post("http://www.example.net", data=request_body)
+    assert_logs(lcc_mock, callee.Any(), callee.Any(), callee.Any(), callee.Any())
+    lcc_mock.save_attachment_content.assert_any_call(
+        callee.Regex(f".*{request_body}.*", re.DOTALL), callee.Any(), "HTTP request body"
+    )
+    lcc_mock.save_attachment_content.assert_any_call(
+        callee.Regex(f".*{response_body}.*", re.DOTALL), callee.Any(), "HTTP response body"
+    )
+
+
+@pytest.mark.parametrize("method", ("get", "options", "head", "post", "put", "patch", "delete"))
+def test_method(lcc_mock, method):
+    session = mock_session()
+    session.logger.request_line_logging = True
+    getattr(session, method)("http://www.example.net")
+    assert_logs(lcc_mock, rf".+{method.upper()} http://www\.example\.net")
+
+
+def test_request(lcc_mock):
+    session = mock_session()
+    session.logger.request_line_logging = True
+    session.request("GET", "http://www.example.net")
+    assert_logs(lcc_mock, rf".+GET http://www\.example\.net")
+
+
