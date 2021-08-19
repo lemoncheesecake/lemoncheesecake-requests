@@ -7,7 +7,8 @@ import pytest
 import requests_mock
 from callee import Regex
 
-from lemoncheesecake_requests import Session, Logger, is_2xx, is_3xx, is_4xx, is_5xx
+from lemoncheesecake_requests import Session, Logger, LemoncheesecakeRequestsException, is_2xx, is_3xx, is_4xx, is_5xx
+from lemoncheesecake.exceptions import AbortTest
 
 
 REGEXP_CLASS = re.compile("dummy").__class__
@@ -80,6 +81,11 @@ def test_logger_no_response_body():
 @pytest.fixture
 def lcc_mock(mocker):
     return mocker.patch("lemoncheesecake_requests.lcc")
+
+
+@pytest.fixture
+def log_check_mock(mocker):
+    return mocker.patch("lemoncheesecake.matching.operations.log_check")
 
 
 def mock_session(session=None, **kwargs):
@@ -382,3 +388,85 @@ def test_request(lcc_mock):
     assert_logs(lcc_mock, rf".+GET http://www\.example\.net")
 
 
+def test_response_check_status_code_success(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.check_status_code(200) is resp
+    log_check_mock.assert_called_with(callee.Regex(".*200.*"), True, callee.Any())
+
+
+def test_response_check_status_code_failure(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.check_status_code(201) is resp
+    log_check_mock.assert_called_with(callee.Regex(".*201.*"), False, callee.Regex(".*200.*"))
+
+
+def test_response_check_ok(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.check_ok() is resp
+    log_check_mock.assert_called_with(callee.Regex(".*200.+299.*"), True, callee.Any())
+
+
+def test_response_require_status_code_success(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.require_status_code(200) is resp
+    log_check_mock.assert_called_with(callee.Regex(".*200.*"), True, callee.Any())
+
+
+def test_response_require_status_code_failure(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    with pytest.raises(AbortTest):
+        resp.require_status_code(201)
+    log_check_mock.assert_called_with(callee.Regex(".*201.*"), False, callee.Regex(".*200.*"))
+
+
+def test_response_require_ok(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.require_ok() is resp
+    log_check_mock.assert_called_with(callee.Regex(".*200.+299.*"), True, callee.Any())
+
+
+def test_response_assert_status_code_success(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.assert_status_code(200) is resp
+    log_check_mock.assert_not_called()
+
+
+def test_response_assert_status_code_failure(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    with pytest.raises(AbortTest):
+        resp.assert_status_code(201)
+    log_check_mock.assert_called_with(callee.Regex(".*201.*"), False, callee.Regex(".*200.*"))
+
+
+def test_response_assert_ok(lcc_mock, log_check_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.assert_ok() is resp
+    log_check_mock.assert_not_called()
+
+
+def test_raise_unless_status_code_success(lcc_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.raise_unless_status_code(200) is resp
+
+
+def test_raise_unless_status_code_failure(lcc_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    with pytest.raises(LemoncheesecakeRequestsException):
+        assert resp.raise_unless_status_code(201) is resp
+
+
+def test_raise_unless_ok(lcc_mock):
+    session = mock_session(status_code=200)
+    resp = session.get("http://www.example.net")
+    assert resp.raise_unless_ok() is resp
