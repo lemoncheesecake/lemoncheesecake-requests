@@ -2,11 +2,15 @@ import re
 import io
 import base64
 
+import callee
 import pytest
 import requests_mock
 from callee import Regex
 
 from lemoncheesecake_requests import Session, Logger, is_2xx, is_3xx, is_4xx, is_5xx
+
+
+REGEXP_CLASS = re.compile("dummy").__class__
 
 
 def test_is_2xx():
@@ -91,7 +95,7 @@ def assert_logs(mock, *expected):
     for val in expected:
         if type(val) is str:
             val = Regex(val, re.DOTALL | re.IGNORECASE)
-        if not isinstance(val, Regex):
+        if isinstance(val, REGEXP_CLASS):
             val = Regex(val)
         mock.log_info.assert_any_call(val)
     assert len(mock.log_info.mock_calls) == len(expected)
@@ -99,11 +103,12 @@ def assert_logs(mock, *expected):
 
 def test_session_default(lcc_mock):
     session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
-    session.get("http://www.example.net")
+    session.post("http://www.example.net", data="foobar")
     assert_logs(
         lcc_mock,
-        r"HTTP request.+GET http://www\.example\.net",
+        r"HTTP request.+POST http://www\.example\.net",
         "HTTP request headers",
+        "HTTP request body",
         r".+status.+201",
         "HTTP response headers.+foo.+bar",
         "HTTP response body.+foobar"
@@ -149,7 +154,7 @@ def test_session_log_only_request_header(lcc_mock):
 def test_session_log_only_request_body_json(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", json={"foo": "bar"})
+    session.post("http://www.example.net", json={"foo": "bar"})
     assert_logs(
         lcc_mock,
         "HTTP request body.+JSON.+foo.+bar"
@@ -159,7 +164,7 @@ def test_session_log_only_request_body_json(lcc_mock):
 def test_session_log_only_request_body_data_as_dict(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", data={"foo": "bar"})
+    session.post("http://www.example.net", data={"foo": "bar"})
     assert_logs(
         lcc_mock,
         "HTTP request body.+foo.+bar"
@@ -169,7 +174,7 @@ def test_session_log_only_request_body_data_as_dict(lcc_mock):
 def test_session_log_only_request_body_data_as_text(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", data="foobar")
+    session.post("http://www.example.net", data="foobar")
     assert_logs(
         lcc_mock,
         "HTTP request body.+foobar"
@@ -179,7 +184,7 @@ def test_session_log_only_request_body_data_as_text(lcc_mock):
 def test_session_log_only_request_body_data_as_binary(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", data=b"foobar")
+    session.post("http://www.example.net", data=b"foobar")
     assert_logs(
         lcc_mock,
         "HTTP request body.+Zm9vYmFy"  # NB: Zm9vYmFy is base64-ified "foobar"
@@ -189,7 +194,7 @@ def test_session_log_only_request_body_data_as_binary(lcc_mock):
 def test_session_log_only_request_body_data_as_stream(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", data=io.StringIO("foobar"))
+    session.post("http://www.example.net", data=io.StringIO("foobar"))
     assert_logs(
         lcc_mock,
         "HTTP request body.+IO stream"
@@ -203,7 +208,7 @@ def test_session_log_only_request_body_data_as_generator(lcc_mock):
 
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", data=mygen())
+    session.post("http://www.example.net", data=mygen())
     assert_logs(
         lcc_mock,
         "HTTP request body.+generator"
@@ -213,7 +218,7 @@ def test_session_log_only_request_body_data_as_generator(lcc_mock):
 def test_session_log_only_request_body_files_as_list(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", files=[("file", ("plain.txt", "sometextdata", "text/plain"))])
+    session.post("http://www.example.net", files=[("file", ("plain.txt", "sometextdata", "text/plain"))])
     assert_logs(
         lcc_mock,
         r"HTTP request body.+plain\.txt.+text/plain"
@@ -223,7 +228,7 @@ def test_session_log_only_request_body_files_as_list(lcc_mock):
 def test_session_log_only_request_body_files_as_dict(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", files={"file": ("plain.txt", "sometextdata", "text/plain")})
+    session.post("http://www.example.net", files={"file": ("plain.txt", "sometextdata", "text/plain")})
     assert_logs(
         lcc_mock,
         r"HTTP request body.+plain\.txt.+text/plain"
@@ -233,7 +238,7 @@ def test_session_log_only_request_body_files_as_dict(lcc_mock):
 def test_session_log_only_request_body_files_as_2_tuple(lcc_mock):
     session = mock_session()
     session.logger.request_body_logging = True
-    session.get("http://www.example.net", files=[("file", ("plain.txt", "sometextdata"))])
+    session.post("http://www.example.net", files=[("file", ("plain.txt", "sometextdata"))])
     assert_logs(
         lcc_mock,
         r"HTTP request body.+plain\.txt"
@@ -319,4 +324,28 @@ mZH\x1b\x17\x91 F\x11EF\x98\x96\xb6\xb5\x88\xcc2\x15\xd4\xfc\xf3\xee\x9dy3g\xe6\
     assert_logs(
         lcc_mock,
         r'HTTP response body.+' + re.escape(data_b64)
+    )
+
+
+def test_session_logger_switching(lcc_mock):
+    session = mock_session(Session(logger=Logger.on()))
+
+    # First call, using the session.logger
+    session.get("http://www.example.net")
+    assert_logs(
+        lcc_mock,
+        callee.Any(), callee.Any(), callee.Any(), callee.Any(), callee.Any()
+    )
+    lcc_mock.reset_mock()
+
+    # Second call, using the logger passed as argument
+    session.get("http://www.example.net", logger=Logger.off())
+    assert_logs(lcc_mock)
+    lcc_mock.reset_mock()
+
+    # Third call, back to the session.logger
+    session.get("http://www.example.net")
+    assert_logs(
+        lcc_mock,
+        callee.Any(), callee.Any(), callee.Any(), callee.Any(), callee.Any()
     )
