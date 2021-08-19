@@ -33,6 +33,46 @@ def test_is_5xx():
     assert not is_5xx().matches(600)
 
 
+def test_logger_on():
+    logger = Logger.on()
+    assert logger.request_line_logging is True
+    assert logger.request_headers_logging is True
+    assert logger.request_body_logging is True
+    assert logger.response_code_logging is True
+    assert logger.response_headers_logging is True
+    assert logger.response_body_logging is True
+
+
+def test_logger_off():
+    logger = Logger.off()
+    assert logger.request_line_logging is False
+    assert logger.request_headers_logging is False
+    assert logger.request_body_logging is False
+    assert logger.response_code_logging is False
+    assert logger.response_headers_logging is False
+    assert logger.response_body_logging is False
+
+
+def test_logger_no_headers():
+    logger = Logger.no_headers()
+    assert logger.request_line_logging is True
+    assert logger.request_headers_logging is False
+    assert logger.request_body_logging is True
+    assert logger.response_code_logging is True
+    assert logger.response_headers_logging is False
+    assert logger.response_body_logging is True
+
+
+def test_logger_no_response_body():
+    logger = Logger.no_response_body()
+    assert logger.request_line_logging is True
+    assert logger.request_headers_logging is True
+    assert logger.request_body_logging is True
+    assert logger.response_code_logging is True
+    assert logger.response_headers_logging is True
+    assert logger.response_body_logging is False
+
+
 @pytest.fixture
 def lcc_mock(mocker):
     return mocker.patch("lemoncheesecake_requests.lcc")
@@ -68,6 +108,12 @@ def test_session_default(lcc_mock):
         "HTTP response headers.+foo.+bar",
         "HTTP response body.+foobar"
     )
+
+
+def test_session_no_logging_at_all(lcc_mock):
+    session = mock_session()
+    session.get("http://www.example.net")
+    assert_logs(lcc_mock)
 
 
 def test_session_log_only_request_line(lcc_mock):
