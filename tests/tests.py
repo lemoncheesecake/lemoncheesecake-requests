@@ -206,6 +206,26 @@ def test_session_log_hints(lcc_mock):
     )
 
 
+def test_session_log_only_response_line(lcc_mock):
+    session = mock_session(status_code=204)
+    session.logger.response_code_logging = True
+    session.get("http://www.example.net")
+    assert_logs(
+        lcc_mock,
+        r"HTTP response.+204"
+    )
+
+
+def test_session_log_only_response_header(lcc_mock):
+    session = mock_session(headers={"Foo": "bar"})
+    session.logger.response_headers_logging = True
+    session.get("http://www.example.net")
+    assert_logs(
+        lcc_mock,
+        r"HTTP response headers.+Foo.+bar"
+    )
+
+
 def test_session_log_only_response_body_text(lcc_mock):
     session = mock_session(text="foobar")
     session.logger.response_body_logging = True
