@@ -329,13 +329,11 @@ class Session(requests.Session):
         self.logger = logger or Logger.on()
         self.hint = hint
         self._last_request = requests.Request()
-        self._last_prepared_request = requests.Request()
 
     def prepare_request(self, request):
         prepared_request = super().prepare_request(request)
         self.logger.log_request(request, prepared_request, self.hint)
         self._last_request = request
-        self._last_prepared_request = prepared_request
         return prepared_request
 
     def request(self, method, url, *args, **kwargs) -> Response:
