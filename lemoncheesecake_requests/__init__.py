@@ -4,12 +4,13 @@ import collections.abc
 import io
 import json
 from urllib.parse import urlencode
+from typing import Union
 
 import requests
 
 import lemoncheesecake.api as lcc
 from lemoncheesecake.matching import *
-from lemoncheesecake.matching.matcher import MatcherDescriptionTransformer
+from lemoncheesecake.matching.matcher import Matcher, MatcherDescriptionTransformer
 
 __all__ = (
     "Session", "Response", "Logger", "LemoncheesecakeRequestsException",
@@ -22,35 +23,60 @@ class LemoncheesecakeRequestsException(Exception):
 
 
 class Logger:
+    """
+    Logger class.
+
+    It provides lemoncheesecake logging facilities for a Session object.
+    """
     def __init__(self,
                  request_line_logging=True, request_headers_logging=True, request_body_logging=True,
                  response_code_logging=True, response_headers_logging=True, response_body_logging=True,
                  max_body_size=2048):
+        #: whether or not the request line must be logged
         self.request_line_logging = request_line_logging
+        #: whether or not the request headers must be logged
         self.request_headers_logging = request_headers_logging
+        #: whether or not the request body must be logged
         self.request_body_logging = request_body_logging
+        #: whether or not the response body must be logged
         self.response_code_logging = response_code_logging
+        #: whether or not the response headers must be logged
         self.response_headers_logging = response_headers_logging
+        #: whether or not the response body must be logged
         self.response_body_logging = response_body_logging
+        #: if a serialized request/response body size is greater than max_body_size then it will
+        # be logged as an attachment
         self.max_body_size = max_body_size
 
     @classmethod
-    def on(cls):
+    def on(cls) -> "Logger":
+        """
+        Create a logger with every request/response details enabled.
+        """
         return cls()
 
     @classmethod
-    def off(cls):
+    def off(cls) -> "Logger":
+        """
+        Create a logger with every request/response details disabled.
+        """
         return cls(
             request_line_logging=False, request_headers_logging=False, request_body_logging=False,
             response_code_logging=False, response_headers_logging=False, response_body_logging=False
         )
 
     @classmethod
-    def no_headers(cls):
+    def no_headers(cls) -> "Logger":
+        """
+        Create a logger with every request/response details enabled except headers.
+        """
         return cls(request_headers_logging=False, response_headers_logging=False)
 
     @classmethod
-    def no_response_body(cls):
+    def no_response_body(cls) -> "Logger":
+        """
+        Create a logger with every request/response details enabled except response body.
+        """
         return cls(response_body_logging=False)
 
     @staticmethod
@@ -181,40 +207,68 @@ class Logger:
 
 
 class Response(requests.Response):
+    """
+    Response class.
+
+    It inherits `requests.Response` and provides extra methods that
+    deals with status code verification.
+    """
+
     def __init__(self):
         super().__init__()
         self._request = requests.Request()
         self._prepared_request = requests.PreparedRequest()
 
     @classmethod
-    def cast(cls, resp: requests.Response, request, prepared_request):
+    def cast(cls, resp: requests.Response, request, prepared_request) -> "Response":
         resp.__class__ = cls
         resp._request = request
         resp._prepared_request = prepared_request
         return resp
 
-    def check_status_code(self, expected):
+    def check_status_code(self, expected: Union[Matcher, int]) -> "Response":
+        """
+        Check the status code using the `check_that` function.
+        """
         check_that("HTTP status code", self.status_code, is_(expected))
         return self
 
-    def check_ok(self):
+    def check_ok(self) -> "Response":
+        """
+        Check that the status code is 2xx using the `check_that` function.
+        """
         return self.check_status_code(is_2xx())
 
-    def require_status_code(self, expected):
+    def require_status_code(self, expected: Union[Matcher, int]) -> "Response":
+        """
+        Check the status code using the `require_that` function.
+        """
         require_that("HTTP status code", self.status_code, is_(expected))
         return self
 
-    def require_ok(self):
+    def require_ok(self) -> "Response":
+        """
+        Check that the status code is 2xx using the `require_that` function.
+        """
         return self.require_status_code(is_2xx())
 
-    def assert_status_code(self, expected):
+    def assert_status_code(self, expected: Union[Matcher, int]) -> "Response":
+        """
+        Check the status code using the `assert_that` function.
+        """
         assert_that("HTTP status code", self.status_code, is_(expected))
         return self
 
-    def assert_ok(self):
+    def assert_ok(self) -> "Response":
+        """
+        Check that the status code is 2xx using the `assert_that` function.
+        """
         return self.assert_status_code(is_2xx())
 
-    def raise_unless_status_code(self, expected):
+    def raise_unless_status_code(self, expected: Union[Matcher, int]) -> "Response":
+        """
+        Raise a `LemoncheesecakeRequestsException` exception unless the status code expected condition is met.
+        """
         matcher = is_(expected)
         outcome = matcher.matches(self.status_code)
         if not outcome:
@@ -235,15 +289,25 @@ class Response(requests.Response):
             )
         return self
 
-    def raise_unless_ok(self):
+    def raise_unless_ok(self) -> "Response":
+        """
+        Raise a `LemoncheesecakeRequestsException` exception unless the status code is 2xx.
+        """
         return self.raise_unless_status_code(is_2xx())
 
 
 class Session(requests.Session):
+    """
+    Session class.
+
+    It inherits the `requests.Session` class to provide logging facilities for lemoncheesecake.
+    The actual logging is performed through the Logger instance. The logger instance is session-wide
+    but it can also be controlled on a per method (`get`, `post`, etc...) basis.
+    """
     def __init__(self, base_url="", logger=None, hint=None):
         super().__init__()
         self.base_url = base_url
-        self.logger = logger or Logger()
+        self.logger = logger or Logger.on()
         self.hint = hint
         self._last_request = requests.Request()
         self._last_prepared_request = requests.Request()
@@ -292,17 +356,30 @@ class Session(requests.Session):
         return super().delete(url, **kwargs)
 
 
-def is_2xx():
+def is_2xx() -> Matcher:
+    """
+    Test if the value is 2xx.
+    """
     return is_between(200, 299)
 
 
-def is_3xx():
+def is_3xx() -> Matcher:
+    """
+    Test if the value is 3xx.
+    """
     return is_between(300, 399)
 
 
-def is_4xx():
+def is_4xx() -> Matcher:
+    """
+    Test if the value is 4xx.
+    """
+
     return is_between(400, 499)
 
 
-def is_5xx():
+def is_5xx() -> Matcher:
+    """
+    Test if the value is 5xx.
+    """
     return is_between(500, 599)
