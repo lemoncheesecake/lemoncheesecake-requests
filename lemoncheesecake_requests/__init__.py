@@ -10,16 +10,51 @@ import requests
 
 import lemoncheesecake.api as lcc
 from lemoncheesecake.matching import *
-from lemoncheesecake.matching.matcher import Matcher, MatcherDescriptionTransformer
+from lemoncheesecake.matching.matcher import Matcher, MatchResult, MatcherDescriptionTransformer
 
 __all__ = (
-    "Session", "Response", "Logger", "LemoncheesecakeRequestsException",
-    "is_2xx", "is_3xx", "is_4xx", "is_5xx"
+    "Session", "Response", "Logger",
+    "is_2xx", "is_3xx", "is_4xx", "is_5xx",
+    "LemoncheesecakeRequestsException", "StatusCodeError"
 )
 
 
 class LemoncheesecakeRequestsException(Exception):
+    """
+    Base exception class for lemoncheesecake-requests.
+    """
     pass
+
+
+class StatusCodeError(LemoncheesecakeRequestsException):
+    """
+    This exception is raised when asking for an explicit exception when
+    a match result is not successful.
+    """
+
+    def __init__(self, response: "Response", matcher: Matcher, match_result: MatchResult):
+        self.response = response
+        self.matcher = matcher
+        self.match_result = match_result
+
+    def __str__(self):
+        return (
+            f"expected status code {self.matcher.build_description(MatcherDescriptionTransformer())}," +
+            f" {self.match_result.description}\n\n" +
+            "\n\n".join(
+                # some serializing methods can return empty data, that's why we filter them out
+                filter(bool, (
+                    Logger.format_request_line(
+                        self.response.request.method, self.response.request.url, self.response.orig_request.params
+                    ),
+                    Logger.format_request_headers(self.response.request.headers),
+                    Logger.format_request_body(self.response.orig_request),
+                    Logger.format_response_line(self.response),
+                    Logger.format_response_headers(self.response.headers),
+                    Logger.format_response_body(self.response)
+                ))
+            )
+        )
 
 
 class Logger:
@@ -216,14 +251,12 @@ class Response(requests.Response):
 
     def __init__(self):
         super().__init__()
-        self._request = requests.Request()
-        self._prepared_request = requests.PreparedRequest()
+        self.orig_request = requests.Request()
 
     @classmethod
-    def cast(cls, resp: requests.Response, request, prepared_request) -> "Response":
+    def cast(cls, resp: requests.Response, orig_request: requests.Request) -> "Response":
         resp.__class__ = cls
-        resp._request = request
-        resp._prepared_request = prepared_request
+        resp.orig_request = orig_request
         return resp
 
     def check_status_code(self, expected: Union[Matcher, int]) -> "Response":
@@ -267,31 +300,17 @@ class Response(requests.Response):
 
     def raise_unless_status_code(self, expected: Union[Matcher, int]) -> "Response":
         """
-        Raise a `LemoncheesecakeRequestsException` exception unless the status code expected condition is met.
+        Raise a `StatusCodeError` exception unless the status code expected condition is met.
         """
         matcher = is_(expected)
-        outcome = matcher.matches(self.status_code)
-        if not outcome:
-            raise LemoncheesecakeRequestsException(
-                f"expected status code {matcher.build_description(MatcherDescriptionTransformer())}," +
-                f" {outcome.description}\n\n" +
-                "\n\n".join(
-                    # some serializing methods can return empty data, that's why we filter them out
-                    filter(bool, (
-                        Logger.format_request_line(self._request.method, self._request.url, self._request.params),
-                        Logger.format_request_headers(self._prepared_request.headers),
-                        Logger.format_request_body(self._request),
-                        Logger.format_response_line(self),
-                        Logger.format_response_headers(self.headers),
-                        Logger.format_response_body(self)
-                    )
-                ))
-            )
+        match_result = matcher.matches(self.status_code)
+        if not match_result:
+            raise StatusCodeError(self, matcher, match_result)
         return self
 
     def raise_unless_ok(self) -> "Response":
         """
-        Raise a `LemoncheesecakeRequestsException` exception unless the status code is 2xx.
+        Raise a `StatusCodeError` exception unless the status code is 2xx.
         """
         return self.raise_unless_status_code(is_2xx())
 
@@ -332,7 +351,7 @@ class Session(requests.Session):
 
         logger.log_response(resp, self.hint)
 
-        return Response.cast(resp, self._last_request, self._last_prepared_request)
+        return Response.cast(resp, self._last_request)
 
     def get(self, url, **kwargs) -> Response:
         return super().get(url, **kwargs)
