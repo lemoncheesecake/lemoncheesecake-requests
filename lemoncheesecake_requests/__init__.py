@@ -250,6 +250,8 @@ class Response(requests.Response):
     """
 
     def __init__(self):
+        # This constructor is not called but is necessary to make the IDE happy when accessing
+        # `orig_request`
         super().__init__()
         self.orig_request = requests.Request()
 

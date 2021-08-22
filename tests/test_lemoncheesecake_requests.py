@@ -7,7 +7,7 @@ import pytest
 import requests_mock
 from callee import Regex
 
-from lemoncheesecake_requests import Session, Logger, StatusCodeError, \
+from lemoncheesecake_requests import Session, Logger, Response, StatusCodeError, \
     is_2xx, is_3xx, is_4xx, is_5xx
 from lemoncheesecake.exceptions import AbortTest
 
@@ -387,6 +387,12 @@ def test_request(lcc_mock):
     session.logger.request_line_logging = True
     session.request("GET", "http://www.example.net")
     assert_logs(lcc_mock, rf".+GET http://www\.example\.net")
+
+
+def test_response_constructor():
+    # see comment in Response.__init__
+    # this test is here to make test coverage happy
+    Response()
 
 
 def test_response_check_status_code_success(lcc_mock, log_check_mock):
