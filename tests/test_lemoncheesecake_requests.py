@@ -7,7 +7,7 @@ import pytest
 import requests_mock
 from callee import Regex
 
-from lemoncheesecake_requests import Session, Logger, Response, StatusCodeError, \
+from lemoncheesecake_requests import Session, Logger, Response, StatusCodeMismatch, \
     is_2xx, is_3xx, is_4xx, is_5xx
 from lemoncheesecake.exceptions import AbortTest
 
@@ -469,7 +469,7 @@ def test_raise_unless_status_code_success(lcc_mock):
 def test_raise_unless_status_code_failure(lcc_mock):
     session = mock_session(status_code=200)
     resp = session.get("http://www.example.net")
-    with pytest.raises(StatusCodeError) as excinfo:
+    with pytest.raises(StatusCodeMismatch) as excinfo:
         resp.raise_unless_status_code(201)
     assert re.search(r"expected .+ 201, .+ 200", str(excinfo.value))
 

@@ -15,7 +15,7 @@ from lemoncheesecake.matching.matcher import Matcher, MatchResult, MatcherDescri
 __all__ = (
     "Session", "Response", "Logger",
     "is_2xx", "is_3xx", "is_4xx", "is_5xx",
-    "LemoncheesecakeRequestsException", "StatusCodeError"
+    "LemoncheesecakeRequestsException", "StatusCodeMismatch"
 )
 
 
@@ -26,7 +26,7 @@ class LemoncheesecakeRequestsException(Exception):
     pass
 
 
-class StatusCodeError(LemoncheesecakeRequestsException):
+class StatusCodeMismatch(LemoncheesecakeRequestsException):
     """
     This exception is raised when asking for an explicit exception when
     a match result is not successful.
@@ -302,17 +302,17 @@ class Response(requests.Response):
 
     def raise_unless_status_code(self, expected: Union[Matcher, int]) -> "Response":
         """
-        Raise a `StatusCodeError` exception unless the status code expected condition is met.
+        Raise a `StatusCodeMismatch` exception unless the status code expected condition is met.
         """
         matcher = is_(expected)
         match_result = matcher.matches(self.status_code)
         if not match_result:
-            raise StatusCodeError(self, matcher, match_result)
+            raise StatusCodeMismatch(self, matcher, match_result)
         return self
 
     def raise_unless_ok(self) -> "Response":
         """
-        Raise a `StatusCodeError` exception unless the status code is 2xx.
+        Raise a `StatusCodeMismatch` exception unless the status code is 2xx.
         """
         return self.raise_unless_status_code(is_2xx())
 
