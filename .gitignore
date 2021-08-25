@@ -3,4 +3,9 @@
 /report
 /reports
 /.coverage
+/.tox
+/doc/_build
+/htmlcov
+/lemoncheesecake_requests.egg-info
+suites
 
