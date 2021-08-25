@@ -345,9 +345,9 @@ class Session(requests.Session):
     """
     def __init__(self, base_url="", logger=None, hint=None):
         super().__init__()
-        #: The optional base_url will be concatenated to the URL passed to methods such as `get()`, `post()` etc..
-        #: to form the complete URL
-        self.base_url: Optional[str] = base_url
+        #: The base_url will be concatenated to the URL passed to methods such as `get()`, `post()` etc..
+        #: to form the complete URL (let the string empty if there is no base_url).
+        self.base_url: str = base_url
         #: The logger to be used by default for the session logging,
         #: if not provided :py:func:`Logger.on` is used.
         self.logger: Logger = logger or Logger.on()
