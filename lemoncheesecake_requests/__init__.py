@@ -337,7 +337,7 @@ class Session(requests.Session):
 
     are overriden, they all:
 
-    - take an optional extra `logger` argument that is used instead of the session-wide ``logger``, example::
+    - take an optional extra ``logger`` argument that is used instead of the session-wide ``logger``, example::
 
         session.get("/foo", logger=Logger.off())
 
@@ -345,7 +345,7 @@ class Session(requests.Session):
     """
     def __init__(self, base_url="", logger=None, hint=None):
         super().__init__()
-        #: The base_url will be concatenated to the URL passed to methods such as `get()`, `post()` etc..
+        #: The base_url will be concatenated to the URL passed to methods such as ``get()``, ``post()`` etc..
         #: to form the complete URL (let the string empty if there is no base_url).
         self.base_url: str = base_url
         #: The logger to be used by default for the session logging,
