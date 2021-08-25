@@ -4,7 +4,7 @@ import collections.abc
 import io
 import json
 from urllib.parse import urlencode
-from typing import Union
+from typing import Union, Optional
 
 import requests
 
@@ -59,29 +59,29 @@ class StatusCodeMismatch(LemoncheesecakeRequestsException):
 
 class Logger:
     """
-    Logger class.
+    The Logger class.
 
-    It provides lemoncheesecake logging facilities for a Session object.
+    It provides lemoncheesecake logging facilities for a :py:class:`lemoncheesecake_requests.Session` object.
     """
     def __init__(self,
                  request_line_logging=True, request_headers_logging=True, request_body_logging=True,
                  response_code_logging=True, response_headers_logging=True, response_body_logging=True,
                  max_body_size=2048):
-        #: whether or not the request line must be logged
-        self.request_line_logging = request_line_logging
-        #: whether or not the request headers must be logged
-        self.request_headers_logging = request_headers_logging
-        #: whether or not the request body must be logged
-        self.request_body_logging = request_body_logging
-        #: whether or not the response body must be logged
-        self.response_code_logging = response_code_logging
-        #: whether or not the response headers must be logged
-        self.response_headers_logging = response_headers_logging
-        #: whether or not the response body must be logged
-        self.response_body_logging = response_body_logging
-        #: if a serialized request/response body size is greater than max_body_size then it will
-        # be logged as an attachment
-        self.max_body_size = max_body_size
+        #: Whether or not the request line must be logged.
+        self.request_line_logging: bool = request_line_logging
+        #: Whether or not the request headers must be logged.
+        self.request_headers_logging: bool = request_headers_logging
+        #: Whether or not the request body must be logged.
+        self.request_body_logging: bool = request_body_logging
+        #: Whether or not the response body must be logged.
+        self.response_code_logging: bool = response_code_logging
+        #: Whether or not the response headers must be logged.
+        self.response_headers_logging: bool = response_headers_logging
+        #: Whether or not the response body must be logged.
+        self.response_body_logging: bool = response_body_logging
+        #: If a serialized request/response body size is greater than max_body_size then it will
+        #: be logged as an attachment.
+        self.max_body_size: Optional[int] = max_body_size
 
     @classmethod
     def on(cls) -> "Logger":
@@ -243,10 +243,10 @@ class Logger:
 
 class Response(requests.Response):
     """
-    Response class.
+    The Response class.
 
-    It inherits `requests.Response` and provides extra methods that
-    deals with status code verification.
+    It inherits :py:class:`requests.Response` and provides extra methods that
+    deal with status code verification.
     """
 
     def __init__(self):
@@ -263,46 +263,46 @@ class Response(requests.Response):
 
     def check_status_code(self, expected: Union[Matcher, int]) -> "Response":
         """
-        Check the status code using the `check_that` function.
+        Check the status code using the :py:func:`lemoncheesecake.matching.check_that` function.
         """
         check_that("HTTP status code", self.status_code, is_(expected))
         return self
 
     def check_ok(self) -> "Response":
         """
-        Check that the status code is 2xx using the `check_that` function.
+        Check that the status code is 2xx using the :py:func:`lemoncheesecake.matching.check_that` function.
         """
         return self.check_status_code(is_2xx())
 
     def require_status_code(self, expected: Union[Matcher, int]) -> "Response":
         """
-        Check the status code using the `require_that` function.
+        Check the status code using the :py:func:`lemoncheesecake.matching.require_that` function.
         """
         require_that("HTTP status code", self.status_code, is_(expected))
         return self
 
     def require_ok(self) -> "Response":
         """
-        Check that the status code is 2xx using the `require_that` function.
+        Check that the status code is 2xx using the :py:func:`lemoncheesecake.matching.require_that` function.
         """
         return self.require_status_code(is_2xx())
 
     def assert_status_code(self, expected: Union[Matcher, int]) -> "Response":
         """
-        Check the status code using the `assert_that` function.
+        Check the status code using the :py:func:`lemoncheesecake.matching.assert_that` function.
         """
         assert_that("HTTP status code", self.status_code, is_(expected))
         return self
 
     def assert_ok(self) -> "Response":
         """
-        Check that the status code is 2xx using the `assert_that` function.
+        Check that the status code is 2xx using the :py:func:`lemoncheesecake.matching.assert_that` function.
         """
         return self.assert_status_code(is_2xx())
 
     def raise_unless_status_code(self, expected: Union[Matcher, int]) -> "Response":
         """
-        Raise a `StatusCodeMismatch` exception unless the status code expected condition is met.
+        Raise a :py:class:`StatusCodeMismatch` exception unless the status code expected condition is met.
         """
         matcher = is_(expected)
         match_result = matcher.matches(self.status_code)
@@ -312,24 +312,47 @@ class Response(requests.Response):
 
     def raise_unless_ok(self) -> "Response":
         """
-        Raise a `StatusCodeMismatch` exception unless the status code is 2xx.
+        Raise a :py:class:`StatusCodeMismatch` exception unless the status code is 2xx.
         """
         return self.raise_unless_status_code(is_2xx())
 
 
 class Session(requests.Session):
     """
-    Session class.
+    The Session class.
 
-    It inherits the `requests.Session` class to provide logging facilities for lemoncheesecake.
-    The actual logging is performed through the Logger instance. The logger instance is session-wide
-    but it can also be controlled on a per method (`get`, `post`, etc...) basis.
+    It inherits the :py:class:`requests.Session` class to provide logging facilities for lemoncheesecake.
+    The actual logging is performed through the :py:class:`Logger` instance which is associated to the session.
+
+    The following ``requests`` methods, performing an actual HTTP request:
+
+    - `request()`
+    - `get()`
+    - `options()`
+    - `head()`
+    - `post()`
+    - `put()`
+    - `patch()`
+    - `delete()`
+
+    are overriden, they all:
+
+    - take an optional extra `logger` argument that is used instead of the session-wide ``logger``, example::
+
+        session.get("/foo", logger=Logger.off())
+
+    - return an instance of :py:class:`lemoncheesecake_requests.Response`
     """
     def __init__(self, base_url="", logger=None, hint=None):
         super().__init__()
-        self.base_url = base_url
-        self.logger = logger or Logger.on()
-        self.hint = hint
+        #: The optional base_url will be concatenated to the URL passed to methods such as `get()`, `post()` etc..
+        #: to form the complete URL
+        self.base_url: Optional[str] = base_url
+        #: The logger to be used by default for the session logging,
+        #: if not provided :py:func:`Logger.on` is used.
+        self.logger: Logger = logger or Logger.on()
+        #: An optional string value to be logged to provide more context to the report reader.
+        self.hint: Optional[str] = hint
         self._last_request = requests.Request()
 
     def prepare_request(self, request):
