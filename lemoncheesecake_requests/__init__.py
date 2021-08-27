@@ -80,7 +80,8 @@ class Logger:
         #: Whether or not the response body must be logged.
         self.response_body_logging: bool = response_body_logging
         #: If a serialized request/response body size is greater than max_body_size then it will
-        #: be logged as an attachment.
+        #: be logged as an attachment. If it is set to ``None``, the body will be logged directly
+        #: whatever his size.
         self.max_body_size: Optional[int] = max_body_size
 
     @classmethod
@@ -400,21 +401,21 @@ class Session(requests.Session):
 
 def is_2xx() -> Matcher:
     """
-    Test if the value is 2xx.
+    Test if the value is between 200 and 299.
     """
     return is_between(200, 299)
 
 
 def is_3xx() -> Matcher:
     """
-    Test if the value is 3xx.
+    Test if the value is between 300 and 399.
     """
     return is_between(300, 399)
 
 
 def is_4xx() -> Matcher:
     """
-    Test if the value is 4xx.
+    Test if the value is between 400 and 499.
     """
 
     return is_between(400, 499)
@@ -422,6 +423,6 @@ def is_4xx() -> Matcher:
 
 def is_5xx() -> Matcher:
     """
-    Test if the value is 5xx.
+    Test if the value is between 500 and 599.
     """
     return is_between(500, 599)
