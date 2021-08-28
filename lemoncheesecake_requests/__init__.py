@@ -111,7 +111,7 @@ class Logger:
     @classmethod
     def no_response_body(cls) -> "Logger":
         """
-        Create a logger with every request/response details enabled except response body.
+        Create a logger with every request/response details enabled except the response body.
         """
         return cls(response_body_logging=False)
 
@@ -304,6 +304,8 @@ class Response(requests.Response):
     def raise_unless_status_code(self, expected: Union[Matcher, int]) -> "Response":
         """
         Raise a :py:class:`StatusCodeMismatch` exception unless the status code expected condition is met.
+
+        :raises: :py:class:`StatusCodeMismatch`
         """
         matcher = is_(expected)
         match_result = matcher.matches(self.status_code)
@@ -314,6 +316,8 @@ class Response(requests.Response):
     def raise_unless_ok(self) -> "Response":
         """
         Raise a :py:class:`StatusCodeMismatch` exception unless the status code is 2xx.
+
+        :raises: :py:class:`StatusCodeMismatch`
         """
         return self.raise_unless_status_code(is_2xx())
 

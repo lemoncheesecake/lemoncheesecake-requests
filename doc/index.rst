@@ -6,10 +6,10 @@
 lemoncheesecake-requests
 ========================
 
-lemoncheesecake-requests provides logging facilities to `requests <https://docs.python-requests.org/>`_ in
+lemoncheesecake-requests provides logging facilities to `requests <https://docs.python-requests.org/>`_ for
 tests written with the `lemoncheesecake <http://lemoncheesecake.io>`_ test framework.
 
-In this example, we implement a very basic Github API endpoint test::
+In this example, we implement a very basic test on a Github API endpoint::
 
    # suites/github.py
 
@@ -71,7 +71,7 @@ by default)::
    session = Session(base_url="https://api.github.com", logger=Logger.no_headers())
    session.get("/orgs/lemoncheesecake")
 
-or per method-wide::
+or overridden on a per request basis::
 
    session = Session(base_url="https://api.github.com")
    session.get("/orgs/lemoncheesecake", logger=Logger.no_headers())
@@ -80,7 +80,7 @@ The :py:attr:`base_url <lemoncheesecake_requests.Session.base_url>` argument is 
 extra :py:attr:`hint <lemoncheesecake_requests.Session.hint>` argument is also available to provide more context in the
 logs to the report reader.
 
-As you might guess from the previous examples, the logger can be fine tuned to control exactly the HTTP request/response details
+As you might guess from the previous examples, the logger can be fine tuned to control exactly what HTTP request/response details
 that will be logged through the following logger boolean attributes:
 
 - :py:attr:`Logger.request_line_logging <lemoncheesecake_requests.Logger.request_line_logging>`
@@ -100,7 +100,7 @@ If you want for instance to create a logger that only logs data coming from the 
 
 and then pass this logger to a session or to a specific HTTP method call.
 
-The :py:class:`lemoncheesecake_requests.Logger` also provide class methods to easily create instances for common usage
+The :py:class:`lemoncheesecake_requests.Logger` class also provide class methods to easily create instances for common usage
 cases:
 
 - :py:func:`Logger.on() <lemoncheesecake_requests.Logger.on>`
@@ -116,11 +116,12 @@ exceed a certain size. This size can be configured through the
 Response
 ~~~~~~~~
 
-The various request-methods (``get()``, ``post()``, etc...) of the ``Session`` object return a
+The various request-methods (``get()``, ``post()``, etc...) of :py:class:`lemoncheesecake_requests.Session` return a
 :py:class:`lemoncheesecake_requests.Response` which extend :py:class:`requests.Response` and provides several
 extra methods to check the response status code.
 
-As you may already know, lemoncheesecake provides three different base functions for matching operations:
+As you may already know, lemoncheesecake provides three different way (for three different behaviors) to perform a
+matching operation:
 
 - :py:func:`lemoncheesecake.matching.check_that`
 - :py:func:`lemoncheesecake.matching.require_that`
@@ -145,24 +146,27 @@ lemoncheesecake-requests also provides the :py:func:`is_2xx() <lemoncheesecake_r
 
    resp.check_status_code(is_2xx())
 
-Depending on your needs, there is also a fourth way to check status code:
-:py:func:`Response.raise_unless_status_code(expected) <lemoncheesecake_requests.Response.raise_unless_status_code>` that will direcly
-raise a :py:class:`StatusCodeMismatch <lemoncheesecake_requests.StatusCodeMismatch>` exception if the condition is not met::
+There is also an alternative way to check status code, that is not built uppon lemoncheesecake's logging facilities:
+:py:func:`Response.raise_unless_status_code(expected) <lemoncheesecake_requests.Response.raise_unless_status_code>`
+will directly
+raise a :py:class:`StatusCodeMismatch <lemoncheesecake_requests.StatusCodeMismatch>` exception if the condition is not met
+and then interrupt the test (unless the exception is explicitly caught)::
 
    resp.raise_unless_status_code(200)
 
 (this function can also take a :py:class:`Matcher <lemoncheesecake.matching.matcher.Matcher>` instance as argument).
 
-These fourth status code checking functions have a corresponding function that check if the status code is 2xx, so that::
+All these methods have a corresponding convenient method that directly check a 2xx status code:
+
+- :py:func:`Response.check_ok() <lemoncheesecake_requests.Response.check_ok>`,
+- :py:func:`Response.require_ok() <lemoncheesecake_requests.Response.require_ok>`
+- :py:func:`Response.assert_ok() <lemoncheesecake_requests.Response.assert_ok>`
+- :py:func:`Response.raise_unless_ok() <lemoncheesecake_requests.Response.raise_unless_ok>`
+
+It means that those two method calls are equivalent::
 
    resp.check_status_code(is_2xx())
-   # and
    resp.check_ok()
-
-are equivalent. See :py:func:`Response.check_ok() <lemoncheesecake_requests.Response.check_ok>`,
-:py:func:`Response.require_ok() <lemoncheesecake_requests.Response.require_ok>`
-:py:func:`Response.assert_ok() <lemoncheesecake_requests.Response.assert_ok>`
-:py:func:`Response.raise_unless_ok() <lemoncheesecake_requests.Response.raise_unless_ok>`.
 
 Please note that all these extra methods return the ``Response`` instance itself, meaning that they can be chained like
 this::
