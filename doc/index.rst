@@ -3,6 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. _`index`:
+
 lemoncheesecake-requests
 ========================
 
@@ -173,3 +175,4 @@ this::
 
    resp = session.get("/orgs/lemoncheesecake").require_ok()
 
+See the :ref:`API Reference<api>` for complete details about the lemoncheesecake-requests API.

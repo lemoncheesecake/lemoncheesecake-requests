@@ -1,6 +1,6 @@
 .. _`api`:
 
-API reference
+API Reference
 =============
 
 API compatibility / stability
