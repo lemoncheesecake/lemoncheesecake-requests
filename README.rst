@@ -4,7 +4,9 @@ lemoncheesecake-requests
 lemoncheesecake-requests provides logging facilities to `requests <https://docs.python-requests.org/>`_ for
 tests written with the `lemoncheesecake <http://lemoncheesecake.io>`_ test framework.
 
-In this example, we implement a very basic test on a Github API endpoint::
+In this example, we implement a very basic test on a Github API endpoint:
+
+.. code-block:: python
 
    # suites/github.py
 
@@ -26,7 +28,9 @@ In this example, we implement a very basic test on a Github API endpoint::
        )
 
 
-We run the test::
+We run the test:
+
+.. code-block:: console
 
    $ lcc.py run
    =================================== github ====================================
@@ -46,7 +50,9 @@ And here is the report details :
 Installation
 ------------
 
-Install through pip::
+Install through pip:
+
+.. code-block:: console
 
    $ pip install lemoncheesecake-requests
 
@@ -55,9 +61,9 @@ lemoncheesecake-requests is compatible with Python 3.6-3.9.
 Features
 --------
 
- - request/response data logging into lemoncheesecake
+- request/response data logging into lemoncheesecake
 
- - response status code checking using lemoncheesecake matching mechanism
+- response status code checking using lemoncheesecake matching mechanism
 
 Documentation
 -------------
