@@ -40,7 +40,8 @@ We run the test::
 
 And here is the report details :
 
-.. image:: _static/report-sample.png
+.. image:: https://github.com/lemoncheesecake/lemoncheesecake/blob/master/doc/_static/report-sample.png?raw=true
+    :alt: test result
 
 Installation
 ------------
