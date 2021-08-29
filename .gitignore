@@ -7,5 +7,6 @@
 /doc/_build
 /htmlcov
 /lemoncheesecake_requests.egg-info
-suites
+/dist
+/suites
 
