@@ -47,6 +47,8 @@ autodoc_default_options = {
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
+# This is not actually the root doc (the root doc is "index") but we need
+# so that Sphinx knows about the toc
 root_doc = "toc"
 
 # List of patterns, relative to source directory, that match files and
