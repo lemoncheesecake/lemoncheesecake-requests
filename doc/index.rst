@@ -17,14 +17,14 @@ In this example, we implement a very basic test on a Github API endpoint::
 
    import lemoncheesecake.api as lcc
    from lemoncheesecake.matching import *
-   from lemoncheesecake_requests import Session, Logger
+   from lemoncheesecake_requests import Session, is_2xx
 
    @lcc.test()
    def get_org():
        session = Session(base_url="https://api.github.com")
 
        resp = session.get("/orgs/lemoncheesecake")
-       resp.require_ok()
+       resp.require_status_code(is_2xx())
 
        check_that_in(
            resp.json(),
@@ -142,7 +142,7 @@ instance, so that the following statements are all valid::
    resp.check_status_code(equal_to(200))
    resp.check_status_code(any_of(200, 201))
 
-lemoncheesecake-requests also provides the :py:func:`is_2xx() <lemoncheesecake_requests.is_2xx>`,
+lemoncheesecake-requests provides the :py:func:`is_2xx() <lemoncheesecake_requests.is_2xx>`,
 :py:func:`is_3xx() <lemoncheesecake_requests.is_3xx>`, :py:func:`is_4xx() <lemoncheesecake_requests.is_4xx>`,
 :py:func:`is_5xx() <lemoncheesecake_requests.is_5xx>` matchers to check status code family::
 
