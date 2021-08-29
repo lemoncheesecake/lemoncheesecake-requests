@@ -28,8 +28,7 @@ class LemoncheesecakeRequestsException(Exception):
 
 class StatusCodeMismatch(LemoncheesecakeRequestsException):
     """
-    This exception is raised when asking for an explicit exception when
-    a match result is not successful.
+    This exception is raised by ``raise_unless_*`` methods.
     """
 
     def __init__(self, response: "Response", matcher: Matcher, match_result: MatchResult):
@@ -340,9 +339,9 @@ class Session(requests.Session):
     - ``patch()``
     - ``delete()``
 
-    are overriden, they all:
+    are overridden, they all:
 
-    - take an optional extra ``logger`` argument that is used instead of the session-wide ``logger``, example::
+    - take an optional extra ``logger`` argument that is used over the session-wide ``logger`` for that call::
 
         session.get("/foo", logger=Logger.off())
 
@@ -354,7 +353,7 @@ class Session(requests.Session):
         #: to form the complete URL (let the string empty if there is no base_url).
         self.base_url: str = base_url
         #: The logger to be used by default for the session logging,
-        #: if not provided :py:func:`Logger.on` is used.
+        #: if not provided, :py:func:`Logger.on` is used.
         self.logger: Logger = logger or Logger.on()
         #: An optional string value to be logged to provide more context to the report reader.
         self.hint: Optional[str] = hint

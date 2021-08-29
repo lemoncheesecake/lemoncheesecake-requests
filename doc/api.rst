@@ -11,7 +11,7 @@ Since lemoncheesecake-requests is still on 0.y.z major version, API breaking cha
 pin the version.
 
 What is considered as "public" is everything documented on https://lemoncheesecake-requests.readthedocs.io.
-Everything else is internal and is subject to change at anytime.
+Everything else is internal and is subject to changes at anytime.
 
 .. module:: lemoncheesecake_requests
 
