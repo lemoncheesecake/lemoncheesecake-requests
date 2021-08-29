@@ -68,6 +68,7 @@ html_sidebars = {
         'logo.html',
         'relations.html',  # needs 'show_related': True theme option to display
         'navigation.html',
+        'links.html',
         'searchbox.html',
     ]
 }
