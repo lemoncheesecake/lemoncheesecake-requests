@@ -176,3 +176,12 @@ this::
    resp = session.get("/orgs/lemoncheesecake").require_ok()
 
 See the :ref:`API Reference<api>` for complete details about the lemoncheesecake-requests API.
+
+Changelog
+---------
+
+The |location_link| will tell you about features, improvements and fixes of each version.
+
+.. |location_link| raw:: html
+
+   <a href="https://github.com/lemoncheesecake/lemoncheesecake-requests/blob/master/CHANGELOG.md" target="_blank">Changelog</a>
