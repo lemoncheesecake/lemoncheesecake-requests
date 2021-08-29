@@ -44,7 +44,7 @@ We run the test:
 
 And here is the report details :
 
-.. image:: https://github.com/lemoncheesecake/lemoncheesecake/blob/master/doc/_static/report-sample.png?raw=true
+.. image:: https://github.com/lemoncheesecake/lemoncheesecake-requests/blob/master/doc/_static/report-sample.png?raw=true
     :alt: test result
 
 Installation
