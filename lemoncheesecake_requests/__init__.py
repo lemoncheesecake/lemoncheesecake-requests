@@ -66,7 +66,7 @@ class Logger:
     def __init__(self,
                  request_line_logging=True, request_headers_logging=True, request_body_logging=True,
                  response_code_logging=True, response_headers_logging=True, response_body_logging=True,
-                 max_body_size=2048):
+                 max_inlined_body_size=2048):
         #: Whether or not the request line must be logged.
         self.request_line_logging: bool = request_line_logging
         #: Whether or not the request headers must be logged.
@@ -79,10 +79,10 @@ class Logger:
         self.response_headers_logging: bool = response_headers_logging
         #: Whether or not the response body must be logged.
         self.response_body_logging: bool = response_body_logging
-        #: If a serialized request/response body size is greater than max_body_size then it will
+        #: If a serialized request/response body size is greater than ``max_inlined_body_size`` then it will
         #: be logged as an attachment. If it is set to ``None``, the body will be logged directly
         #: whatever his size.
-        self.max_body_size: Optional[int] = max_body_size
+        self.max_inlined_body_size: Optional[int] = max_inlined_body_size
 
     @classmethod
     def on(cls) -> "Logger":
@@ -214,7 +214,7 @@ class Logger:
             return "HTTP response body (JSON):\n" + (cls._format_json(js))
 
     def _log_body(self, formatted_body, description):
-        if self.max_body_size is not None and len(formatted_body) > self.max_body_size:
+        if self.max_inlined_body_size is not None and len(formatted_body) > self.max_inlined_body_size:
             lcc.save_attachment_content(formatted_body, "body", description)
         else:
             lcc.log_info(formatted_body)

@@ -113,7 +113,7 @@ cases:
 HTTP request bodies and especially response bodies might be very large and make the final report unreadable.
 That's why the logger will log the request/response bodies as attachment if their (serialized) content size
 exceed a certain size. This size can be configured through the
-:py:attr:`max_body_size <lemoncheesecake_requests.Logger.max_body_size>` logger attribute.
+:py:attr:`max_inlined_body_size <lemoncheesecake_requests.Logger.max_inlined_body_size>` logger attribute.
 
 Response
 ~~~~~~~~

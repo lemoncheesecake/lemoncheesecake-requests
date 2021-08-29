@@ -363,7 +363,7 @@ def test_bodies_saved_as_attachments(lcc_mock):
     response_body = "B" * 20
     session = mock_session(text=response_body)
     session.logger = Logger.on()
-    session.logger.max_body_size = 10
+    session.logger.max_inlined_body_size = 10
     session.post("http://www.example.net", data=request_body)
     assert_logs(lcc_mock, callee.Any(), callee.Any(), callee.Any(), callee.Any())
     lcc_mock.save_attachment_content.assert_any_call(
