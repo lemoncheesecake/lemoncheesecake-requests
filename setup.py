@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
+import os.path as osp
 from setuptools import setup, find_packages
 
 
+current_dir = osp.abspath(osp.dirname(__file__))
+
+info = {}
+with open(osp.join(current_dir, "lemoncheesecake_requests", "__version__.py")) as fh:
+    exec(fh.read(), info)
+
 setup(
     name="lemoncheesecake-requests",
-    version="0.1.0",
+    version=info["__version__"],
     description="Test Storytelling",
     # long_description=open("README.rst").read(),
     author="Nicolas Delon",

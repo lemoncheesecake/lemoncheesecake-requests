@@ -17,12 +17,16 @@
 import sys
 sys.path.append("..")
 
+from lemoncheesecake_requests.__version__ import __version__
+
+
 # -- Project information -----------------------------------------------------
 
 project = 'lemoncheesecake-requests'
 copyright = '2021, Nicolas Delon'
 author = 'Nicolas Delon'
-
+version = __version__
+release = __version__
 
 # -- General configuration ---------------------------------------------------
 
