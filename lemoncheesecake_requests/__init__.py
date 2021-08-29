@@ -331,14 +331,14 @@ class Session(requests.Session):
 
     The following ``requests`` methods, performing an actual HTTP request:
 
-    - `request()`
-    - `get()`
-    - `options()`
-    - `head()`
-    - `post()`
-    - `put()`
-    - `patch()`
-    - `delete()`
+    - ``request()``
+    - ``get()``
+    - ``options()``
+    - ``head()``
+    - ``post()``
+    - ``put()``
+    - ``patch()``
+    - ``delete()``
 
     are overriden, they all:
 
