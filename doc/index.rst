@@ -45,7 +45,7 @@ We run the test::
     * Successes: 1 (100%)
     * Failures: 0
 
-And here is the report details :
+And here are the report details :
 
 .. image:: _static/report-sample.png
 
@@ -119,7 +119,7 @@ Response
 ~~~~~~~~
 
 The various request-methods (``get()``, ``post()``, etc...) of :py:class:`lemoncheesecake_requests.Session` return a
-:py:class:`lemoncheesecake_requests.Response` which extend :py:class:`requests.Response` and provides several
+:py:class:`lemoncheesecake_requests.Response` which extends :py:class:`requests.Response` and provides several
 extra methods to check the response status code.
 
 As you may already know, lemoncheesecake provides three different way (for three different behaviors) to perform a
@@ -158,7 +158,7 @@ and then interrupt the test (unless the exception is explicitly caught)::
 
 (this function can also take a :py:class:`Matcher <lemoncheesecake.matching.matcher.Matcher>` instance as argument).
 
-All these methods have a corresponding convenient method that directly check a 2xx status code:
+All these methods have a corresponding shortcut method that directly check a 2xx status code:
 
 - :py:func:`Response.check_ok() <lemoncheesecake_requests.Response.check_ok>`,
 - :py:func:`Response.require_ok() <lemoncheesecake_requests.Response.require_ok>`
@@ -175,7 +175,7 @@ this::
 
    resp = session.get("/orgs/lemoncheesecake").require_ok()
 
-See the :ref:`API Reference<api>` for complete details about the lemoncheesecake-requests API.
+See the :ref:`API Reference<api>` for full details about the lemoncheesecake-requests API.
 
 Changelog
 ---------
