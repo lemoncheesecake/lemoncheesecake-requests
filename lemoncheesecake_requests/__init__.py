@@ -44,7 +44,7 @@ class StatusCodeMismatch(LemoncheesecakeRequestsException):
                 # some serializing methods can return empty data, that's why we filter them out
                 filter(bool, (
                     Logger.format_request_line(
-                        self.response.request.method, self.response.request.url, self.response.orig_request.params
+                        self.response.request.method, self.response.request.url
                     ),
                     Logger.format_request_headers(self.response.request.headers),
                     Logger.format_request_body(self.response.orig_request),
@@ -115,13 +115,13 @@ class Logger:
         return cls(response_body_logging=False)
 
     @staticmethod
-    def format_request_line(method: str, url: str, params: dict, hint: str = None) -> str:
+    def format_request_line(method: str, url: str, params: dict = None, hint: str = None) -> str:
         formatted = "HTTP request"
         if hint:
             formatted += f" ({hint})"
         formatted += f":\n  > {method} {url}"
         if params:
-            formatted += "?" + urlencode(params)
+            formatted += ("&" if "?" in url else "?") + urlencode(params)
         return formatted
 
     @staticmethod
