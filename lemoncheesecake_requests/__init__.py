@@ -65,6 +65,7 @@ class Logger:
     def __init__(self,
                  request_line_logging=True, request_headers_logging=True, request_body_logging=True,
                  response_code_logging=True, response_headers_logging=True, response_body_logging=True,
+                 debug=False,
                  max_inlined_body_size=2048):
         #: Whether or not the request line must be logged.
         self.request_line_logging: bool = request_line_logging
@@ -78,17 +79,19 @@ class Logger:
         self.response_headers_logging: bool = response_headers_logging
         #: Whether or not the response body must be logged.
         self.response_body_logging: bool = response_body_logging
+        #: Whether or not the logger should log as debug instead of info
+        self.debug: bool = debug
         #: If a serialized request/response body size is greater than ``max_inlined_body_size`` then it will
         #: be logged as an attachment. If it is set to ``None``, the body will be logged directly
         #: whatever his size.
         self.max_inlined_body_size: Optional[int] = max_inlined_body_size
 
     @classmethod
-    def on(cls) -> "Logger":
+    def on(cls, debug=False) -> "Logger":
         """
         Create a logger with every request/response details enabled.
         """
-        return cls()
+        return cls(debug=debug)
 
     @classmethod
     def off(cls) -> "Logger":
@@ -101,18 +104,18 @@ class Logger:
         )
 
     @classmethod
-    def no_headers(cls) -> "Logger":
+    def no_headers(cls, debug=False) -> "Logger":
         """
         Create a logger with every request/response details enabled except headers.
         """
-        return cls(request_headers_logging=False, response_headers_logging=False)
+        return cls(request_headers_logging=False, response_headers_logging=False, debug=debug)
 
     @classmethod
-    def no_response_body(cls) -> "Logger":
+    def no_response_body(cls, debug=False) -> "Logger":
         """
         Create a logger with every request/response details enabled except the response body.
         """
-        return cls(response_body_logging=False)
+        return cls(response_body_logging=False, debug=debug)
 
     @staticmethod
     def format_request_line(method: str, url: str, params: dict = None, hint: str = None) -> str:
@@ -212,18 +215,24 @@ class Logger:
         else:
             return "HTTP response body (JSON):\n" + (cls._format_json(js))
 
+    def _log(self, content):
+        if self.debug:
+            lcc.log_debug(content)
+        else:
+            lcc.log_info(content)
+
     def _log_body(self, formatted_body, description):
-        if self.max_inlined_body_size is not None and len(formatted_body) > self.max_inlined_body_size:
+        if not self.debug and self.max_inlined_body_size is not None and len(formatted_body) > self.max_inlined_body_size:
             lcc.save_attachment_content(formatted_body, "body", description)
         else:
-            lcc.log_info(formatted_body)
+            self._log(formatted_body)
 
     def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, hint: str):
         if self.request_line_logging:
-            lcc.log_info(self.format_request_line(request.method, request.url, request.params, hint))
+            self._log(self.format_request_line(request.method, request.url, request.params, hint))
 
         if self.request_headers_logging:
-            lcc.log_info(self.format_request_headers(prepared_request.headers))
+            self._log(self.format_request_headers(prepared_request.headers))
 
         if self.request_body_logging:
             formatted_body = self.format_request_body(request)
@@ -232,10 +241,10 @@ class Logger:
 
     def log_response(self, resp: requests.Response, hint: str):
         if self.response_code_logging:
-            lcc.log_info(self.format_response_line(resp, hint))
+            self._log(self.format_response_line(resp, hint))
 
         if self.response_headers_logging:
-            lcc.log_info(self.format_response_headers(resp.headers))
+            self._log(self.format_response_headers(resp.headers))
 
         if self.response_body_logging:
             self._log_body(self.format_response_body(resp), "HTTP response body")

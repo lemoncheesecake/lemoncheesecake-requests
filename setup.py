@@ -43,5 +43,5 @@ setup(
     },
 
     packages=find_packages(),
-    install_requires=("lemoncheesecake~=1.6", "requests~=2.23.0")
+    install_requires=("lemoncheesecake~=1.10.0", "requests~=2.23.0")
 )

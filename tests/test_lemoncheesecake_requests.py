@@ -39,14 +39,16 @@ def test_is_5xx():
     assert not is_5xx().matches(600)
 
 
-def test_logger_on():
-    logger = Logger.on()
+@pytest.mark.parametrize("debug,expected", ((None, False), (False, False), (True, True)))
+def test_logger_on(debug, expected):
+    logger = Logger.on() if debug is None else Logger.on(debug)
     assert logger.request_line_logging is True
     assert logger.request_headers_logging is True
     assert logger.request_body_logging is True
     assert logger.response_code_logging is True
     assert logger.response_headers_logging is True
     assert logger.response_body_logging is True
+    assert logger.debug is expected
 
 
 def test_logger_off():
@@ -57,26 +59,31 @@ def test_logger_off():
     assert logger.response_code_logging is False
     assert logger.response_headers_logging is False
     assert logger.response_body_logging is False
+    assert logger.debug is False
 
 
-def test_logger_no_headers():
-    logger = Logger.no_headers()
+@pytest.mark.parametrize("debug,expected", ((None, False), (False, False), (True, True)))
+def test_logger_no_headers(debug, expected):
+    logger = Logger.no_headers() if debug is None else Logger.no_headers(debug)
     assert logger.request_line_logging is True
     assert logger.request_headers_logging is False
     assert logger.request_body_logging is True
     assert logger.response_code_logging is True
     assert logger.response_headers_logging is False
     assert logger.response_body_logging is True
+    assert logger.debug is expected
 
 
-def test_logger_no_response_body():
-    logger = Logger.no_response_body()
+@pytest.mark.parametrize("debug,expected", ((None, False), (False, False), (True, True)))
+def test_logger_no_response_body(debug, expected):
+    logger = Logger.no_response_body() if debug is None else Logger.no_response_body(debug)
     assert logger.request_line_logging is True
     assert logger.request_headers_logging is True
     assert logger.request_body_logging is True
     assert logger.response_code_logging is True
     assert logger.response_headers_logging is True
     assert logger.response_body_logging is False
+    assert logger.debug is expected
 
 
 @pytest.fixture
@@ -98,18 +105,23 @@ def mock_session(session=None, **kwargs):
     return session
 
 
-def assert_logs(mock, *expected):
+def assert_logs(mock, *expected, as_debug=False):
+    log_mock = mock.log_debug if as_debug else mock.log_info
+
     for val in expected:
         if type(val) is str:
             val = Regex(val, re.DOTALL | re.IGNORECASE)
         if isinstance(val, REGEXP_CLASS):
             val = Regex(val)
-        mock.log_info.assert_any_call(val)
-    assert len(mock.log_info.mock_calls) == len(expected)
+        log_mock.assert_any_call(val)
+    assert len(log_mock.mock_calls) == len(expected)
 
 
-def test_session_default(lcc_mock):
+@pytest.mark.parametrize("as_debug", ([False], [True]))
+def test_session_default(lcc_mock, as_debug):
     session = mock_session(Session(), status_code=201, headers={"Foo": "bar"}, text="foobar")
+    if as_debug:
+        session.logger.debug = True
     session.post("http://www.example.net", data="foobar")
     assert_logs(
         lcc_mock,
@@ -118,7 +130,8 @@ def test_session_default(lcc_mock):
         "HTTP request body",
         r".+status.+201",
         "HTTP response headers.+foo.+bar",
-        "HTTP response body.+foobar"
+        "HTTP response body.+foobar",
+        as_debug=as_debug
     )
 
 
@@ -371,6 +384,21 @@ def test_bodies_saved_as_attachments(lcc_mock):
     )
     lcc_mock.save_attachment_content.assert_any_call(
         callee.Regex(f".*{response_body}.*", re.DOTALL), callee.Any(), "HTTP response body"
+    )
+
+
+def test_max_inlined_body_size_and_debug(lcc_mock):
+    request_body = "A" * 20
+    response_body = "B" * 20
+    session = mock_session(text=response_body)
+    session.logger = Logger.on()
+    session.logger.max_inlined_body_size = 10
+    session.logger.debug = True
+    session.post("http://www.example.net", data=request_body)
+    assert_logs(
+        lcc_mock,
+        callee.Any(), callee.Any(), callee.Any(), callee.Any(), callee.Any(), callee.Any(),
+        as_debug=True
     )
 
 

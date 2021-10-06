@@ -83,7 +83,7 @@ extra :py:attr:`hint <lemoncheesecake_requests.Session.hint>` argument is also a
 logs to the report reader.
 
 As you might guess from the previous examples, the logger can be fine tuned to control exactly what HTTP request/response details
-that will be logged through the following logger boolean attributes:
+that will be logged and how through the following logger boolean attributes:
 
 - :py:attr:`Logger.request_line_logging <lemoncheesecake_requests.Logger.request_line_logging>`
 - :py:attr:`Logger.request_headers_logging <lemoncheesecake_requests.Logger.request_headers_logging>`
@@ -91,6 +91,8 @@ that will be logged through the following logger boolean attributes:
 - :py:attr:`Logger.response_code_logging <lemoncheesecake_requests.Logger.response_code_logging>`
 - :py:attr:`Logger.response_headers_logging <lemoncheesecake_requests.Logger.response_headers_logging>`
 - :py:attr:`Logger.response_body_logging <lemoncheesecake_requests.Logger.response_body_logging>`
+- :py:attr:`Logger.debug <lemoncheesecake_requests.Logger.debug>`
+
 
 If you want for instance to create a logger that only logs data coming from the response::
 
@@ -102,8 +104,12 @@ If you want for instance to create a logger that only logs data coming from the 
 
 and then pass this logger to a session or to a specific HTTP method call.
 
-The :py:class:`lemoncheesecake_requests.Logger` class also provide class methods to easily create instances for common usage
-cases:
+The boolean ``debug`` attribute controls whether or not logging is done using the "debug" level or the default "info" level.
+Please note that with lemoncheesecake 1.10.0 and higher debug logs are hidden by default in HTML reports and
+``lcc report`` (with an option to show them) which make them convenient to log less-important data without overloading the report.
+
+The :py:class:`lemoncheesecake_requests.Logger` class also provide class methods to easily create instances for common
+usage cases:
 
 - :py:func:`Logger.on() <lemoncheesecake_requests.Logger.on>`
 - :py:func:`Logger.off() <lemoncheesecake_requests.Logger.off>`
