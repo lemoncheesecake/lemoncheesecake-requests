@@ -1,6 +1,18 @@
 lemoncheesecake-requests
 ========================
 
+.. image:: https://github.com/lemoncheesecake/lemoncheesecake-requests/actions/workflows/tests.yml/badge.svg
+    :target: https://github.com/lemoncheesecake/lemoncheesecake-requests/actions/workflows/tests.yml
+
+.. image:: https://codecov.io/gh/lemoncheesecake/lemoncheesecake-requests/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/lemoncheesecake/lemoncheesecake-requests
+
+.. image:: https://img.shields.io/pypi/v/lemoncheesecake-requests.svg
+    :target: https://pypi.org/project/lemoncheesecake-requests/
+
+.. image:: https://img.shields.io/pypi/pyversions/lemoncheesecake-requests.svg
+    :target: https://pypi.org/project/lemoncheesecake-requests/
+
 lemoncheesecake-requests provides logging facilities to `requests <https://docs.python-requests.org/>`_ for
 tests written with the `lemoncheesecake <http://lemoncheesecake.io>`_ test framework.
 
