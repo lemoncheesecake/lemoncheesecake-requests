@@ -9,6 +9,7 @@ from callee import Regex
 
 from lemoncheesecake_requests import Session, Logger, Response, StatusCodeMismatch, \
     is_2xx, is_3xx, is_4xx, is_5xx
+from lemoncheesecake_requests.__version__ import __version__
 from lemoncheesecake.exceptions import AbortTest
 
 
@@ -506,3 +507,7 @@ def test_raise_unless_ok(lcc_mock):
     session = mock_session(status_code=200)
     resp = session.get("http://www.example.net")
     assert resp.raise_unless_ok() is resp
+
+
+def test_version():
+    assert re.match(r"^\d+\.\d+\.\d+$", __version__)
