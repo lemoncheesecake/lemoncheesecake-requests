@@ -1,3 +1,2 @@
-lemoncheesecake~=1.10.0
-requests~=2.23.0
-
+lemoncheesecake~=1.10
+requests~=2.23
