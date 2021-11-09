@@ -1,3 +1,7 @@
+# 0.2.1 (2021-11-10)
+
+- Fix incorrect dependencies
+
 # 0.2.0 (2021-10-06)
 
 - Add `Logger.debug` to control whether logging is done with 'debug' or 'info' level
