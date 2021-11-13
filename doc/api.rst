@@ -6,7 +6,7 @@ API Reference
 API compatibility / stability
 -----------------------------
 
-lemoncheesecake follows the well know `Semantic Versioning <https://semver.org/>`_ for it's public API.
+lemoncheesecake-requests follows the well know `Semantic Versioning <https://semver.org/>`_ for its public API.
 Since lemoncheesecake-requests is still on 0.y.z major version, API breaking changes might occur; it is then advised to
 pin the version.
 
