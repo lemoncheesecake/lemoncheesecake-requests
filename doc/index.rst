@@ -56,7 +56,7 @@ Install through pip::
 
    $ pip install lemoncheesecake-requests
 
-lemoncheesecake-requests is compatible with Python 3.6-3.10.
+lemoncheesecake-requests is compatible with Python 3.7-3.10.
 
 Features
 --------
