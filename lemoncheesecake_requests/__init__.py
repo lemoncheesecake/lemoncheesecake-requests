@@ -411,30 +411,36 @@ class Session(requests.Session):
         return super().delete(url, **kwargs)
 
 
+def _build_status_code_matcher(n):
+    return is_between(
+        min=n * 100,  # example: 2 => 200
+        max=((n + 1) * 100) - 1  # example: 2 => 299
+    ).override_description(f"to be {n}xx")
+
+
 def is_2xx() -> Matcher:
     """
     Test if the value is between 200 and 299.
     """
-    return is_between(200, 299)
+    return _build_status_code_matcher(2)
 
 
 def is_3xx() -> Matcher:
     """
     Test if the value is between 300 and 399.
     """
-    return is_between(300, 399)
+    return _build_status_code_matcher(3)
 
 
 def is_4xx() -> Matcher:
     """
     Test if the value is between 400 and 499.
     """
-
-    return is_between(400, 499)
+    return _build_status_code_matcher(4)
 
 
 def is_5xx() -> Matcher:
     """
     Test if the value is between 500 and 599.
     """
-    return is_between(500, 599)
+    return _build_status_code_matcher(5)

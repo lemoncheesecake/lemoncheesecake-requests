@@ -442,7 +442,7 @@ def test_response_check_ok(lcc_mock, log_check_mock):
     session = mock_session(status_code=200)
     resp = session.get("http://www.example.net")
     assert resp.check_ok() is resp
-    log_check_mock.assert_called_with(callee.Regex(".*200.+299.*"), True, callee.Any())
+    log_check_mock.assert_called_with(callee.Regex(".*2xx.*"), True, callee.Any())
 
 
 def test_response_require_status_code_success(lcc_mock, log_check_mock):
@@ -464,7 +464,7 @@ def test_response_require_ok(lcc_mock, log_check_mock):
     session = mock_session(status_code=200)
     resp = session.get("http://www.example.net")
     assert resp.require_ok() is resp
-    log_check_mock.assert_called_with(callee.Regex(".*200.+299.*"), True, callee.Any())
+    log_check_mock.assert_called_with(callee.Regex(".*2xx.*"), True, callee.Any())
 
 
 def test_response_assert_status_code_success(lcc_mock, log_check_mock):
