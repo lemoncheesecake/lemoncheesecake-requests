@@ -3,7 +3,6 @@ import inspect
 import collections.abc
 import io
 import json
-from urllib.parse import urlencode
 from typing import Union, Optional
 
 import requests
@@ -118,13 +117,11 @@ class Logger:
         return cls(response_body_logging=False, debug=debug)
 
     @staticmethod
-    def format_request_line(method: str, url: str, params: dict = None, hint: str = None) -> str:
+    def format_request_line(method: str, url: str, hint: str = None) -> str:
         formatted = "HTTP request"
         if hint:
             formatted += f" ({hint})"
         formatted += f":\n  > {method} {url}"
-        if params:
-            formatted += ("&" if "?" in url else "?") + urlencode(params)
         return formatted
 
     @staticmethod
@@ -229,7 +226,7 @@ class Logger:
 
     def log_request(self, request: requests.Request, prepared_request: requests.PreparedRequest, hint: str):
         if self.request_line_logging:
-            self._log(self.format_request_line(request.method, request.url, request.params, hint))
+            self._log(self.format_request_line(request.method, prepared_request.url, hint))
 
         if self.request_headers_logging:
             self._log(self.format_request_headers(prepared_request.headers))

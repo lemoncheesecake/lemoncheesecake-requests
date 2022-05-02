@@ -158,7 +158,17 @@ def test_session_log_only_request_line_with_params(lcc_mock):
     session.get("http://www.example.net", params={"foo": "bar"})
     assert_logs(
         lcc_mock,
-        r"HTTP request.+GET http://www\.example\.net\?foo=bar",
+        r"HTTP request.+GET http://www\.example\.net/\?foo=bar",
+    )
+
+
+def test_session_log_only_request_line_with_multivalued_param(lcc_mock):
+    session = mock_session()
+    session.logger.request_line_logging = True
+    session.get("http://www.example.net", params={"foo": ["bar", "baz"]})
+    assert_logs(
+        lcc_mock,
+        r"HTTP request.+GET http://www\.example\.net/\?foo=bar&foo=baz",
     )
 
 
