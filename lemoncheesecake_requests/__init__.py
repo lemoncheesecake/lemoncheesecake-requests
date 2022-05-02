@@ -46,7 +46,7 @@ class StatusCodeMismatch(LemoncheesecakeRequestsException):
                         self.response.request.method, self.response.request.url
                     ),
                     Logger.format_request_headers(self.response.request.headers),
-                    Logger.format_request_body(self.response.orig_request),
+                    Logger.format_request_body(self.response.orig_request, self.response.request),
                     Logger.format_response_line(self.response),
                     Logger.format_response_headers(self.response.headers),
                     Logger.format_response_body(self.response)
@@ -142,18 +142,21 @@ class Logger:
 
     @classmethod
     def _format_request_json(cls, data) -> str:
-        return "HTTP request body (JSON):\n" + cls._format_json(data)
+        return "HTTP request body (application/json):\n" + cls._format_json(data)
 
     @classmethod
-    def _format_request_data(cls, data) -> str:
+    def _format_request_data(cls, data, content_type) -> str:
         if isinstance(data, collections.abc.Mapping):
-            return "HTTP request body (multi-part form parameters):\n" + Logger._format_dict(data)
+            return "HTTP request body%s:\n%s" % (
+                f" ({content_type})" if content_type else "",
+                Logger._format_dict(data)
+            )
         elif inspect.isgenerator(data):
             return "HTTP request body:\n  > <generator>"
         elif isinstance(data, io.IOBase):
             return "HTTP request body:\n  > <IO stream>"
         elif isinstance(data, bytes):
-            return "HTTP request body (binary, base64-ified):\n" + cls._format_binary(data)
+            return "HTTP request body (binary data, displayed as base64):\n" + cls._format_binary(data)
         else:
             return "HTTP request body:\n" + data
 
@@ -164,7 +167,7 @@ class Logger:
         else:
             infos = [f[1] for f in files]
 
-        return "HTTP request body (multipart files):\n%s" % (
+        return "HTTP request body (files as multipart/form-data):\n%s" % (
             "\n".join(
                 "- %s (%s)" % (info[0], info[2]) if len(info) >= 3 else "- %s" % info[0]
                 for info in infos
@@ -172,13 +175,13 @@ class Logger:
         )
 
     @classmethod
-    def format_request_body(cls, request: requests.Request) -> str:
+    def format_request_body(cls, request: requests.Request, prepared_request: requests.PreparedRequest) -> str:
         chunks = []
 
         if request.json is not None:
             chunks.append(cls._format_request_json(request.json))
         if request.data:
-            chunks.append(cls._format_request_data(request.data))
+            chunks.append(cls._format_request_data(request.data, prepared_request.headers.get("Content-Type")))
         if request.files:
             chunks.append(cls._format_request_files(request.files))
 
@@ -208,9 +211,9 @@ class Logger:
             if resp.apparent_encoding is not None:  # None means that it does not look like text
                 return "HTTP response body:\n" + resp.text
             else:
-                return "HTTP response body (binary, base64-ified):\n" + cls._format_binary(resp.content)
+                return "HTTP response body (binary data, displayed as base64):\n" + cls._format_binary(resp.content)
         else:
-            return "HTTP response body (JSON):\n" + (cls._format_json(js))
+            return "HTTP response body (application/json):\n" + (cls._format_json(js))
 
     def _log(self, content):
         if self.debug:
@@ -232,7 +235,7 @@ class Logger:
             self._log(self.format_request_headers(prepared_request.headers))
 
         if self.request_body_logging:
-            formatted_body = self.format_request_body(request)
+            formatted_body = self.format_request_body(request, prepared_request)
             if formatted_body:
                 self._log_body(formatted_body, "HTTP request body")
 
