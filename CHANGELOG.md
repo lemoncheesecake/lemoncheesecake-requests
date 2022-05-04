@@ -1,3 +1,11 @@
+# 0.3.0 (2022-05-04)
+
+- Improve `is_Nxx` matcher descriptions (for instance `is between 200 and 299` becomes `is 2xx`)
+- Improve the way the content-type hint is displayed in request & response bodies
+- Fix wrong URL formatting when the `params` argument contains multivalued parameters (simply use the full URL already
+  computed by requests through `PreparedRequest`)
+- Drop Python 3.6 support
+
 # 0.2.1 (2021-11-10)
 
 - Fix incorrect dependencies
