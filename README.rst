@@ -44,7 +44,7 @@ We run the test:
 
 .. code-block:: console
 
-   $ lcc.py run
+   $ lcc run
    =================================== github ====================================
     OK  1 # github.get_org
 

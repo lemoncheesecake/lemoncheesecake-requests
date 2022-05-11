@@ -35,7 +35,7 @@ In this example, we implement a very basic test on a Github API endpoint::
 
 We run the test::
 
-   $ lcc.py run
+   $ lcc run
    =================================== github ====================================
     OK  1 # github.get_org
 
