@@ -2,6 +2,7 @@ import re
 import io
 import base64
 
+from unittest.mock import patch
 import callee
 import pytest
 import requests_mock
@@ -90,11 +91,6 @@ def test_logger_no_response_body(debug, expected):
 @pytest.fixture
 def lcc_mock(mocker):
     return mocker.patch("lemoncheesecake_requests.lcc")
-
-
-@pytest.fixture
-def log_check_mock(mocker):
-    return mocker.patch("lemoncheesecake.matching.operations.log_check")
 
 
 def mock_session(session=None, **kwargs):
@@ -434,89 +430,112 @@ def test_response_constructor():
     Response()
 
 
-def test_response_check_status_code_success(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.check_status_code(200) is resp
-    log_check_mock.assert_called_with(callee.Regex(".*200.*"), True, callee.Any())
+class mock_response:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.mock = None
+
+    def do(self, action, raises=None, match=None):
+        with patch("lemoncheesecake.matching.operations.log_check") as log_check_mock:
+            self.mock = log_check_mock
+            session = mock_session(**self.kwargs)
+            resp = session.get("http://www.example.net")
+            if raises:
+                with pytest.raises(raises, match=match):
+                    action(resp)
+            else:
+                assert action(resp) is resp
+        return self
+
+    def assert_log(self, description, outcome, details):
+        self.mock.assert_called_with(
+            description, outcome,
+            details if details is not NotImplemented else callee.Any()
+        )
+
+    def assert_log_success(self, description, details=NotImplemented):
+        self.assert_log(description, True, details)
+
+    def assert_log_failure(self, description, details=NotImplemented):
+        self.assert_log(description, False, details)
+
+    def assert_no_log(self):
+        self.mock.assert_not_called()
 
 
-def test_response_check_status_code_failure(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.check_status_code(201) is resp
-    log_check_mock.assert_called_with(callee.Regex(".*201.*"), False, callee.Regex(".*200.*"))
+def mock_200():
+    return mock_response(status_code=200)
 
 
-def test_response_check_ok(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.check_ok() is resp
-    log_check_mock.assert_called_with(callee.Regex(".*2xx.*"), True, callee.Any())
+def test_response_check_status_code_success():
+    mock_200(). \
+        do(lambda r: r.check_status_code(200)). \
+        assert_log_success(callee.Regex(".*200.*"))
 
 
-def test_response_require_status_code_success(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.require_status_code(200) is resp
-    log_check_mock.assert_called_with(callee.Regex(".*200.*"), True, callee.Any())
+def test_response_check_status_code_failure():
+    mock_200(). \
+        do(lambda r: r.check_status_code(201)). \
+        assert_log_failure(callee.Regex(".*201.*"), callee.Regex(".*200.*"))
 
 
-def test_response_require_status_code_failure(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    with pytest.raises(AbortTest):
-        resp.require_status_code(201)
-    log_check_mock.assert_called_with(callee.Regex(".*201.*"), False, callee.Regex(".*200.*"))
+def test_response_check_ok():
+    mock_200(). \
+        do(lambda r: r.check_ok()). \
+        assert_log_success(callee.Regex(".*2xx.*"))
 
 
-def test_response_require_ok(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.require_ok() is resp
-    log_check_mock.assert_called_with(callee.Regex(".*2xx.*"), True, callee.Any())
+def test_response_require_status_code_success():
+    mock_200(). \
+        do(lambda r: r.require_status_code(200)). \
+        assert_log_success(callee.Regex(".*200.*"))
 
 
-def test_response_assert_status_code_success(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.assert_status_code(200) is resp
-    log_check_mock.assert_not_called()
+def test_response_require_status_code_failure():
+    mock_200(). \
+        do(lambda r: r.require_status_code(201), raises=AbortTest). \
+        assert_log_failure(callee.Regex(".*201.*"), callee.Regex(".*200.*"))
 
 
-def test_response_assert_status_code_failure(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    with pytest.raises(AbortTest):
-        resp.assert_status_code(201)
-    log_check_mock.assert_called_with(callee.Regex(".*201.*"), False, callee.Regex(".*200.*"))
+def test_response_require_ok():
+    mock_200(). \
+        do(lambda r: r.require_ok()). \
+        assert_log_success(callee.Regex(".*2xx.*"))
 
 
-def test_response_assert_ok(lcc_mock, log_check_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.assert_ok() is resp
-    log_check_mock.assert_not_called()
+def test_response_assert_status_code_success():
+    mock_200(). \
+        do(lambda r: r.assert_status_code(200)). \
+        assert_no_log()
 
 
-def test_raise_unless_status_code_success(lcc_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.raise_unless_status_code(200) is resp
+def test_response_assert_status_code_failure():
+    mock_200(). \
+        do(lambda r: r.assert_status_code(201), raises=AbortTest). \
+        assert_log_failure(callee.Regex(".*201.*"), callee.Regex(".*200.*"))
 
 
-def test_raise_unless_status_code_failure(lcc_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    with pytest.raises(StatusCodeMismatch) as excinfo:
-        resp.raise_unless_status_code(201)
-    assert re.search(r"expected .+ 201, .+ 200", str(excinfo.value))
+def test_response_assert_ok():
+    mock_200(). \
+        do(lambda r: r.assert_ok()). \
+        assert_no_log()
 
 
-def test_raise_unless_ok(lcc_mock):
-    session = mock_session(status_code=200)
-    resp = session.get("http://www.example.net")
-    assert resp.raise_unless_ok() is resp
+def test_raise_unless_status_code_success():
+    mock_200(). \
+        do(lambda r: r.raise_unless_status_code(200))
+
+
+def test_raise_unless_status_code_failure():
+    mock_200(). \
+        do(lambda r: r.raise_unless_status_code(201),
+           raises=StatusCodeMismatch,
+           match=r"expected .+ 201, .+ 200")
+
+
+def test_raise_unless_ok():
+    mock_200(). \
+        do(lambda r: r.raise_unless_ok())
 
 
 def test_version():
