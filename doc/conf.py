@@ -1,5 +1,6 @@
 import sys
-sys.path.append("..")
+import os.path as osp
+sys.path.insert(0, osp.join(osp.dirname(__file__), ".."))
 
 from lemoncheesecake_requests.__version__ import __version__
 
