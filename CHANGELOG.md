@@ -1,3 +1,16 @@
+# 0.4.0 (2023-01-23)
+
+- Add the following new methods to the `Response` class:
+  - `check_header`
+  - `require_header`
+  - `assert_header`
+  - `check_headers`
+  - `require_headers`
+  - `assert_headers`
+  - `check_json`
+  - `require_json`
+  - `assert_json`
+
 # 0.3.0 (2022-05-04)
 
 - Improve `is_Nxx` matcher descriptions (for instance `is between 200 and 299` becomes `is 2xx`)
