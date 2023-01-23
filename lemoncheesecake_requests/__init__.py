@@ -329,6 +329,88 @@ class Response(requests.Response):
         """
         return self.raise_unless_status_code(is_2xx())
 
+    @staticmethod
+    def _to_matchers(d: dict) -> dict:
+        return {key: is_(value) for key, value in d.items()}
+
+    def check_headers(self, expected: dict) -> "Response":
+        """
+        Check response headers using the :py:func:`lemoncheesecake.matching.check_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        check_that_in(self.headers, self._to_matchers(expected))
+        return self
+
+    def require_headers(self, expected: dict) -> "Response":
+        """
+        Check response headers using the :py:func:`lemoncheesecake.matching.require_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        require_that_in(self.headers, self._to_matchers(expected))
+        return self
+
+    def assert_headers(self, expected: dict) -> "Response":
+        """
+        Check response headers using the :py:func:`lemoncheesecake.matching.assert_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        assert_that_in(self.headers, self._to_matchers(expected))
+        return self
+
+    def check_header(self, name, expected: Union[Matcher, str]) -> "Response":
+        """
+        Check response headers using the :py:func:`lemoncheesecake.matching.check_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        return self.check_headers({name: expected})
+
+    def require_header(self, name, expected: Union[Matcher, str]) -> "Response":
+        """
+        Check response headers using the :py:func:`lemoncheesecake.matching.require_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        return self.require_headers({name: expected})
+
+    def assert_header(self, name, expected: Union[Matcher, str]) -> "Response":
+        """
+        Check response headers using the :py:func:`lemoncheesecake.matching.assert_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        return self.assert_headers({name: expected})
+
+    def check_json(self, expected: dict) -> "Response":
+        """
+        Check the response JSON using the :py:func:`lemoncheesecake.matching.check_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        check_that_in(self.json(), expected)
+        return self
+
+    def require_json(self, expected: dict) -> "Response":
+        """
+        Check the response JSON using the :py:func:`lemoncheesecake.matching.require_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        require_that_in(self.json(), expected)
+        return self
+
+    def assert_json(self, expected: dict) -> "Response":
+        """
+        Check the response JSON using the :py:func:`lemoncheesecake.matching.assert_that_in` function.
+
+        .. versionadded:: 0.4.0
+        """
+        assert_that_in(self.json(), expected)
+        return self
+
 
 class Session(requests.Session):
     """

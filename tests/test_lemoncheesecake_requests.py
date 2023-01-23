@@ -1,6 +1,7 @@
 import re
 import io
 import base64
+from typing import Any
 
 from unittest.mock import patch
 import callee
@@ -11,6 +12,7 @@ from callee import Regex
 from lemoncheesecake_requests import Session, Logger, Response, StatusCodeMismatch, \
     is_2xx, is_3xx, is_4xx, is_5xx
 from lemoncheesecake_requests.__version__ import __version__
+from lemoncheesecake.matching.matchers import equal_to
 from lemoncheesecake.exceptions import AbortTest
 
 
@@ -453,10 +455,10 @@ class mock_response:
             details if details is not NotImplemented else callee.Any()
         )
 
-    def assert_log_success(self, description, details=NotImplemented):
+    def assert_log_success(self, description, details: Any = NotImplemented):
         self.assert_log(description, True, details)
 
-    def assert_log_failure(self, description, details=NotImplemented):
+    def assert_log_failure(self, description, details: Any = NotImplemented):
         self.assert_log(description, False, details)
 
     def assert_no_log(self):
@@ -465,6 +467,10 @@ class mock_response:
 
 def mock_200():
     return mock_response(status_code=200)
+
+
+def mock_application_json():
+    return mock_response(headers={"Content-Type": "application/json"})
 
 
 def test_response_check_status_code_success():
@@ -536,6 +542,114 @@ def test_raise_unless_status_code_failure():
 def test_raise_unless_ok():
     mock_200(). \
         do(lambda r: r.raise_unless_ok())
+
+
+def test_check_header_success():
+    mock_application_json(). \
+        do(lambda r: r.check_header("Content-Type", "application/json")). \
+        assert_log_success(callee.Contains("application/json"))
+
+
+def test_check_header_failure():
+    mock_application_json(). \
+        do(lambda r: r.check_header("Content-Type", "text/html")). \
+        assert_log_failure(callee.Contains("text/html"), callee.Contains("application/json"))
+
+
+def test_require_header_success():
+    mock_application_json(). \
+        do(lambda r: r.require_header("Content-Type", "application/json")). \
+        assert_log_success(callee.Contains("application/json"))
+
+
+def test_require_header_failure():
+    mock_application_json(). \
+        do(lambda r: r.require_header("Content-Type", "text/html"), raises=AbortTest). \
+        assert_log_failure(callee.Contains("text/html"), callee.Contains("application/json"))
+
+
+def test_assert_header_success():
+    mock_application_json(). \
+        do(lambda r: r.assert_header("Content-Type", "application/json")). \
+        assert_no_log()
+
+
+def test_assert_header_failure():
+    mock_application_json(). \
+        do(lambda r: r.assert_header("Content-Type", "text/html"), raises=AbortTest). \
+        assert_log_failure(callee.Contains("text/html"), callee.Contains("application/json"))
+
+
+def test_check_headers_success():
+    mock_application_json(). \
+        do(lambda r: r.check_headers({"Content-Type": "application/json"})). \
+        assert_log_success(callee.Contains("application/json"))
+
+
+def test_check_headers_failure():
+    mock_application_json(). \
+        do(lambda r: r.check_headers({"Content-Type": "text/html"})). \
+        assert_log_failure(callee.Contains("text/html"), callee.Contains("application/json"))
+
+
+def test_require_headers_success():
+    mock_application_json(). \
+        do(lambda r: r.require_headers({"Content-Type": "application/json"})). \
+        assert_log_success(callee.Contains("application/json"))
+
+
+def test_require_headers_failure():
+    mock_application_json(). \
+        do(lambda r: r.require_headers({"Content-Type": "text/html"}), raises=AbortTest). \
+        assert_log_failure(callee.Contains("text/html"), callee.Contains("application/json"))
+
+
+def test_assert_headers_success():
+    mock_application_json(). \
+        do(lambda r: r.assert_headers({"Content-Type": "application/json"})). \
+        assert_no_log()
+
+
+def test_assert_headers_failure():
+    mock_application_json(). \
+        do(lambda r: r.assert_headers({"Content-Type": "text/html"}), raises=AbortTest). \
+        assert_log_failure(callee.Contains("text/html"), callee.Contains("application/json"))
+
+
+def test_check_json_success():
+    mock_response(json={"foo": "bar"}). \
+        do(lambda r: r.check_json({"foo": equal_to("bar")})). \
+        assert_log_success(callee.Regex(r".+foo.+bar.+"))
+
+
+def test_check_json_failure():
+    mock_response(json={"foo": "bar"}). \
+        do(lambda r: r.check_json({"foo": equal_to("baz")})). \
+        assert_log_failure(callee.Contains("baz"), callee.Contains("bar"))
+
+
+def test_require_json_success():
+    mock_response(json={"foo": "bar"}). \
+        do(lambda r: r.require_json({"foo": equal_to("bar")})). \
+        assert_log_success(callee.Regex(r".+foo.+bar.+"))
+
+
+def test_require_json_failure():
+    mock_response(json={"foo": "bar"}). \
+        do(lambda r: r.require_json({"foo": equal_to("baz")}), raises=AbortTest). \
+        assert_log_failure(callee.Contains("baz"), callee.Contains("bar"))
+
+
+def test_assert_json_success():
+    mock_response(json={"foo": "bar"}). \
+        do(lambda r: r.assert_json({"foo": equal_to("bar")})). \
+        assert_no_log()
+
+
+def test_assert_json_failure():
+    mock_response(json={"foo": "bar"}). \
+        do(lambda r: r.assert_json({"foo": equal_to("baz")}), raises=AbortTest). \
+        assert_log_failure(callee.Contains("baz"), callee.Contains("bar"))
 
 
 def test_version():

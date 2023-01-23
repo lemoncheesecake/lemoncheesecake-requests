@@ -35,7 +35,10 @@ Response
 
 .. autoclass:: Response
     :members: check_status_code, check_ok, require_status_code, require_ok, assert_status_code, assert_ok,
-        raise_unless_status_code, raise_unless_ok
+        raise_unless_status_code, raise_unless_ok,
+        check_header, require_header, assert_header,
+        check_headers, require_headers, assert_headers,
+        check_json, require_json, assert_json
 
 
 Matchers

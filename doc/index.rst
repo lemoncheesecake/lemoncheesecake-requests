@@ -23,14 +23,12 @@ In this example, we implement a very basic test on a Github API endpoint::
    def get_org():
        session = Session(base_url="https://api.github.com")
 
-       resp = session.get("/orgs/lemoncheesecake")
-       resp.require_status_code(is_2xx())
-
-       check_that_in(
-           resp.json(),
-           "id", is_integer(),
-           "name", equal_to("lemoncheesecake")
-       )
+       resp = session.get("/orgs/lemoncheesecake"). \
+         require_status_code(is_2xx()). \
+         check_json({
+           "id": is_integer(),
+           "name": equal_to("lemoncheesecake")
+         })
 
 
 We run the test::
@@ -125,17 +123,23 @@ Response
 ~~~~~~~~
 
 The various request-methods (``get()``, ``post()``, etc...) of :py:class:`lemoncheesecake_requests.Session` return a
-:py:class:`lemoncheesecake_requests.Response` which extends :py:class:`requests.Response` and provides several
-extra methods to check the response status code.
+:py:class:`lemoncheesecake_requests.Response` which extends :py:class:`requests.Response` and provide several
+extra methods to check various aspect of the response such as its status code, headers and JSON content.
 
-As you may already know, lemoncheesecake provides three different way (for three different behaviors) to perform a
+As you may already know, lemoncheesecake provides three different ways (for three different behaviors) to perform a
 matching operation:
 
 - :py:func:`lemoncheesecake.matching.check_that`
 - :py:func:`lemoncheesecake.matching.require_that`
 - :py:func:`lemoncheesecake.matching.assert_that`
 
-The :py:class:`lemoncheesecake_requests.Response` follows the same logic by offering the corresponding three methods:
+The :py:class:`lemoncheesecake_requests.Response` follows the same logic by offering various ``check_``, ``require_``
+and ``assert_`` methods.
+
+Status code
+^^^^^^^^^^^
+
+The following methods are available:
 
 - :py:func:`Response.check_status_code(expected) <lemoncheesecake_requests.Response.check_status_code>`
 - :py:func:`Response.require_status_code(expected) <lemoncheesecake_requests.Response.require_status_code>`
@@ -154,10 +158,9 @@ lemoncheesecake-requests provides the :py:func:`is_2xx() <lemoncheesecake_reques
 
    resp.check_status_code(is_2xx())
 
-There is also an alternative way to check status code, that is not built uppon lemoncheesecake's logging facilities:
+There is also an alternative way to check status code:
 :py:func:`Response.raise_unless_status_code(expected) <lemoncheesecake_requests.Response.raise_unless_status_code>`
-will directly
-raise a :py:class:`StatusCodeMismatch <lemoncheesecake_requests.StatusCodeMismatch>` exception if the condition is not met
+will directly raise a :py:class:`StatusCodeMismatch <lemoncheesecake_requests.StatusCodeMismatch>` exception if the condition is not met
 and then interrupt the test (unless the exception is explicitly caught)::
 
    resp.raise_unless_status_code(200)
@@ -175,6 +178,33 @@ It means that those two method calls are equivalent::
 
    resp.check_status_code(is_2xx())
    resp.check_ok()
+
+Response headers
+^^^^^^^^^^^^^^^^
+
+Response headers can be checked with::
+
+   resp.check_header("Content-Type", "application/json")
+
+or::
+
+   resp.check_headers({"Content-Type": "application/json"})
+
+The expected value (i.e "application/json" in this example) can also be a matcher instance.
+
+Like status code check, these two methods exist with their ``require_`` and ``assert_`` counterparts.
+
+Response JSON
+^^^^^^^^^^^^^
+
+Response JSON can be checked with::
+
+   resp.check_json({"id": is_integer()})
+
+Like status code check, this method exists with its ``require_`` and ``assert_`` counterparts.
+
+Notes
+^^^^^
 
 Please note that all these extra methods return the ``Response`` instance itself, meaning that they can be chained like
 this::
