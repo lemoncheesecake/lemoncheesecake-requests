@@ -6,7 +6,7 @@ from lemoncheesecake_requests.__version__ import __version__
 
 
 project = 'lemoncheesecake-requests'
-copyright = '2022, Nicolas Delon'
+copyright = '2023, Nicolas Delon'
 author = 'Nicolas Delon'
 version = __version__
 release = __version__
