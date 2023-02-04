@@ -24,12 +24,11 @@ In this example, we implement a very basic test on a Github API endpoint::
        session = Session(base_url="https://api.github.com")
 
        resp = session.get("/orgs/lemoncheesecake"). \
-         require_status_code(is_2xx()). \
-         check_json({
-           "id": is_integer(),
-           "name": equal_to("lemoncheesecake")
-         })
-
+           require_status_code(is_2xx()). \
+           check_json({
+                "id": is_integer(),
+                "name": equal_to("lemoncheesecake")
+           })
 
 We run the test::
 
